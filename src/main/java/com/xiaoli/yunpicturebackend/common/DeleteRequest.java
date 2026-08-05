@@ -3,6 +3,9 @@ package com.xiaoli.yunpicturebackend.common;
 import lombok.Data;
 import java.io.Serializable;
 
+/**
+ * 通用删除体
+ */
 @Data
 public class DeleteRequest implements Serializable {
 
