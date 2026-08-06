@@ -24,12 +24,6 @@ mybatis-plus:
       logic-not-delete-value: 0 # 逻辑未删除值
 
 
-
-
-
-
-
-
 #接口文档配置
 knife4j:
   enable: true
@@ -45,8 +39,6 @@ knife4j:
     terms-of-service-url: https://stackoverflow.com/
     group:
       default:
-
         api-rule: package
         api-rule-resources:
           - com.xiaoli.yunpicturebackend.controller
-
