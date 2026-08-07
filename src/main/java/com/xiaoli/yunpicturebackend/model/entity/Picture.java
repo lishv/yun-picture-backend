@@ -2,6 +2,7 @@ package com.xiaoli.yunpicturebackend.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 
+import java.io.Serializable;
 import java.util.Date;
 import lombok.Data;
 
@@ -11,11 +12,12 @@ import lombok.Data;
  */
 @TableName(value ="picture")
 @Data
-public class Picture {
+public class Picture implements Serializable {
+    private static final long serialVersionUID = 1247727794005797605L;
     /**
      * id
      */
-    @TableId(type = IdType.AUTO)
+    @TableId(type = IdType.ASSIGN_ID)
     private Long id;
 
     /**
@@ -71,7 +73,7 @@ public class Picture {
     /**
      * 创建用户 id
      */
-    private Long userID;
+    private Long userId;
 
     /**
      * 创建时间
@@ -93,4 +95,5 @@ public class Picture {
      */
     @TableLogic
     private Integer isDelete;
+
 }

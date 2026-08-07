@@ -11,6 +11,10 @@ spring:
     url: jdbc:mysql://192.168.200.128:3306/yun_picture
     username: root
     password: L2570410870
+  #开放servlet更大的上传限制,默认1MB
+  servlet:
+    multipart:
+      max-file-size: 10MB
 mybatis-plus:
   configuration:
     # 映射语句名称的自动匹配:关,因为全部使用驼峰命名法
@@ -22,7 +26,6 @@ mybatis-plus:
       logic-delete-field: isDelete # 逻辑删除字段名
       logic-delete-value: 1 # 逻辑删除值
       logic-not-delete-value: 0 # 逻辑未删除值
-
 
 #接口文档配置
 knife4j:
