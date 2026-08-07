@@ -233,8 +233,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String sortOrder = userQueryRequest.getSortOrder();//排序顺序
         QueryWrapper<User> queryWrapper= new QueryWrapper<User>();
 
-        Integer current = userQueryRequest.getCurrent();
-        Integer pageSize = userQueryRequest.getPageSize();
+//        Integer current = userQueryRequest.getCurrent();
+//        Integer pageSize = userQueryRequest.getPageSize();
         queryWrapper
                 .eq(ObjectUtil.isNotNull(id), "id", id)
                 .like(StrUtil.isNotBlank(userName), "userName", userName)
@@ -244,6 +244,16 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
                 .orderBy(StrUtil.isNotBlank(sortField) && StrUtil.isNotBlank(sortOrder), "ascend".equals(sortOrder), sortField);
 
         return queryWrapper;
+    }
+
+    /**
+     * 判断用户是否为管理员
+     * @param user 用户
+     * @return 是否为管理员
+     */
+    @Override
+    public boolean isAdmin(User user) {
+        return user!=null&&user.getUserRole().equals(UserRoleEnum.Admin.getValue());
     }
 }
 
