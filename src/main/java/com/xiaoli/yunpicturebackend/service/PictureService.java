@@ -2,11 +2,13 @@ package com.xiaoli.yunpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xiaoli.yunpicturebackend.model.dto.picture.PictureCursorQueryRequest;
 import com.xiaoli.yunpicturebackend.model.dto.picture.PictureQueryRequest;
 import com.xiaoli.yunpicturebackend.model.dto.picture.PictureUploadRequest;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaoli.yunpicturebackend.model.entity.User;
+import com.xiaoli.yunpicturebackend.model.vo.CursorPageVO;
 import com.xiaoli.yunpicturebackend.model.vo.PictureVO;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,4 +57,16 @@ public interface PictureService extends IService<Picture> {
      * @param picture 图片实体类
      */
     void validatePicture(Picture picture);
+
+    /**
+     * 使用复合游标查询图片列表
+     *
+     * @param pictureCursorQueryRequest 游标查询参数
+     * @param request HTTP 请求
+     * @return 游标分页结果
+     */
+    CursorPageVO<PictureVO> listPictureVOByCursor(
+            PictureCursorQueryRequest pictureCursorQueryRequest,
+            HttpServletRequest request
+    );
 }

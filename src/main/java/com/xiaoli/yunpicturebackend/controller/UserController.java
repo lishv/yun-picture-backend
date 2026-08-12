@@ -164,7 +164,7 @@ public class UserController {
      * @return 退出登录结果
      */
     @PostMapping("/logout")
-    public BaseResponse<Boolean> userLogOut(HttpServletRequest request) {
+    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
       if(request==null){
           return ResultUtils.success(false);
       }

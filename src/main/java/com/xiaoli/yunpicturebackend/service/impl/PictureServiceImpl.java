@@ -11,10 +11,12 @@ import com.xiaoli.yunpicturebackend.exception.ErrorCode;
 import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
 import com.xiaoli.yunpicturebackend.manager.FileManager;
 import com.xiaoli.yunpicturebackend.model.dto.file.UploadPictureResult;
+import com.xiaoli.yunpicturebackend.model.dto.picture.PictureCursorQueryRequest;
 import com.xiaoli.yunpicturebackend.model.dto.picture.PictureQueryRequest;
 import com.xiaoli.yunpicturebackend.model.dto.picture.PictureUploadRequest;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.xiaoli.yunpicturebackend.model.entity.User;
+import com.xiaoli.yunpicturebackend.model.vo.CursorPageVO;
 import com.xiaoli.yunpicturebackend.model.vo.PictureVO;
 import com.xiaoli.yunpicturebackend.model.vo.UserVO;
 import com.xiaoli.yunpicturebackend.service.PictureService;
@@ -26,10 +28,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -163,30 +163,56 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
      * @return 分页对象,包含图片VO类列表
      */
     @Override
-    public Page<PictureVO>getPictureVOPage(Page<Picture> picturePage, HttpServletRequest request){
+    public Page<PictureVO> getPictureVOPage(
+            Page<Picture> picturePage,
+            HttpServletRequest request
+    ) {
         List<Picture> pictureList = picturePage.getRecords();
-        Page<PictureVO> pictureVOPage = new Page<>(picturePage.getCurrent(), picturePage.getSize(), picturePage.getTotal());
-        if(CollUtil.isEmpty(pictureList)){
+
+        Page<PictureVO> pictureVOPage = new Page<>(
+                picturePage.getCurrent(),
+                picturePage.getSize(),
+                picturePage.getTotal()
+        );
+
+        if (CollUtil.isEmpty(pictureList)) {
             return pictureVOPage;
         }
-        //内部转换为VO类
-        List<PictureVO> pictureVOList = pictureList.stream().map(PictureVO::objToVo).toList();
-        //1.关联查询用户,因为内部的uservo是空的,所以需要关联查询用户信息
-        Set<Long> userIdSet = pictureList.stream().map(Picture::getId).collect(Collectors.toSet());
+
+        // 将图片实体转换为图片 VO。
+        List<PictureVO> pictureVOList = pictureList.stream()
+                .map(PictureVO::objToVo)
+                .collect(Collectors.toList());
+
+        // 获取图片创建者 ID，批量查询用户，避免循环查询数据库。
+        Set<Long> userIdSet = pictureList.stream()
+                .map(Picture::getUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+
+        if (CollUtil.isEmpty(userIdSet)) {
+            pictureVOPage.setRecords(pictureVOList);
+            return pictureVOPage;
+        }
+
         List<User> userList = userService.listByIds(userIdSet);
-        //根据用户id分组
-        Map<Long, List<User>> userIdUserListMap = userList.stream().collect(Collectors.groupingBy(User::getId));
+
+        Map<Long, List<User>> userIdUserListMap = userList.stream()
+                .collect(Collectors.groupingBy(User::getId));
+
         pictureVOList.forEach(pictureVO -> {
             Long userId = pictureVO.getUserId();
-            User user=null;
-            if(userIdUserListMap.containsKey(userId)){
+            User user = null;
+
+            if (userId != null && userIdUserListMap.containsKey(userId)) {
                 user = userIdUserListMap.get(userId).get(0);
             }
+
             pictureVO.setUser(userService.getUserVO(user));
         });
+
         pictureVOPage.setRecords(pictureVOList);
         return pictureVOPage;
-
     }
 
     /**
@@ -212,6 +238,140 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         if (StrUtil.isNotBlank(introduction)) {
             ThrowUtils.throwIf(introduction.length() > 800, ErrorCode.PARAMS_ERROR, "简介过长");
         }
+    }
+    /**
+     * 使用复合游标查询图片列表。
+     *
+     * @param cursorRequest 游标查询参数
+     * @param request HTTP 请求
+     * @return 游标查询结果
+     */
+    @Override
+    public CursorPageVO<PictureVO> listPictureVOByCursor(
+            PictureCursorQueryRequest cursorRequest,
+            HttpServletRequest request
+    ) {
+        int pageSize = cursorRequest.getPageSize() == null
+                ? 20
+                : cursorRequest.getPageSize();
+
+        ThrowUtils.throwIf(
+                pageSize <= 0 || pageSize > 20,
+                ErrorCode.PARAMS_ERROR,
+                "每次加载数量必须在 1 到 20 之间"
+        );
+
+        boolean hasCursorCreateTime =
+                cursorRequest.getCursorCreateTime() != null;
+        boolean hasCursorId =
+                cursorRequest.getCursorId() != null;
+
+        // createTime 和 id 必须同时存在或同时不存在。
+        ThrowUtils.throwIf(
+                hasCursorCreateTime != hasCursorId,
+                ErrorCode.PARAMS_ERROR,
+                "游标参数必须同时提供"
+        );
+
+        // 复用已有的图片搜索条件。
+        PictureQueryRequest queryRequest =
+                new PictureQueryRequest();
+
+        queryRequest.setSearchText(
+                cursorRequest.getSearchText()
+        );
+        queryRequest.setCategory(
+                cursorRequest.getCategory()
+        );
+        queryRequest.setTags(
+                cursorRequest.getTags()
+        );
+
+        QueryWrapper<Picture> queryWrapper =
+                getQueryWrapper(queryRequest);
+
+        // 下一批数据：
+        // createTime 小于上一批最后一项，
+        // 或 createTime 相同但 id 更小。
+        if (hasCursorCreateTime) {
+            queryWrapper.and(wrapper ->
+                    wrapper
+                            .lt(
+                                    "createTime",
+                                    cursorRequest.getCursorCreateTime()
+                            )
+                            .or(nested -> nested
+                                    .eq(
+                                            "createTime",
+                                            cursorRequest.getCursorCreateTime()
+                                    )
+                                    .lt(
+                                            "id",
+                                            cursorRequest.getCursorId()
+                                    )
+                            )
+            );
+        }
+
+        queryWrapper
+                .orderByDesc("createTime")
+                .orderByDesc("id")
+                // 多查询一项，用于判断还有没有下一批。
+                .last("LIMIT " + (pageSize + 1));
+
+        List<Picture> queriedPictures =
+                this.list(queryWrapper);
+
+        boolean hasMore =
+                queriedPictures.size() > pageSize;
+
+        List<Picture> currentPictures;
+
+        if (hasMore) {
+            currentPictures = new ArrayList<>(
+                    queriedPictures.subList(0, pageSize)
+            );
+        } else {
+            currentPictures =
+                    new ArrayList<>(queriedPictures);
+        }
+
+        /*
+         * 复用已有的 getPictureVOPage，
+         * 完成 PictureVO 转换和用户信息关联。
+         * 这一步不会再次查询 picture 表。
+         */
+        Page<Picture> cursorPicturePage =
+                new Page<>(1, pageSize);
+
+        cursorPicturePage.setRecords(currentPictures);
+        cursorPicturePage.setTotal(currentPictures.size());
+
+        Page<PictureVO> cursorPictureVOPage =
+                getPictureVOPage(cursorPicturePage, request);
+
+        CursorPageVO<PictureVO> result =
+                new CursorPageVO<>();
+
+        result.setRecords(
+                cursorPictureVOPage.getRecords()
+        );
+        result.setHasMore(hasMore);
+
+        if (hasMore && !currentPictures.isEmpty()) {
+            Picture lastPicture = currentPictures.get(
+                    currentPictures.size() - 1
+            );
+
+            result.setNextCursorCreateTime(
+                    lastPicture.getCreateTime()
+            );
+            result.setNextCursorId(
+                    lastPicture.getId()
+            );
+        }
+
+        return result;
     }
 }
 

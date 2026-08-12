@@ -10,16 +10,15 @@ import com.xiaoli.yunpicturebackend.constant.UserConstant;
 import com.xiaoli.yunpicturebackend.exception.BusinessException;
 import com.xiaoli.yunpicturebackend.exception.ErrorCode;
 import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureEditRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureQueryRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureUpdateRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.xiaoli.yunpicturebackend.model.dto.picture.*;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.xiaoli.yunpicturebackend.model.entity.User;
+import com.xiaoli.yunpicturebackend.model.vo.CursorPageVO;
 import com.xiaoli.yunpicturebackend.model.vo.PictureTagCategory;
 import com.xiaoli.yunpicturebackend.model.vo.PictureVO;
 import com.xiaoli.yunpicturebackend.service.PictureService;
 import com.xiaoli.yunpicturebackend.service.UserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import javax.annotation.Resource;
@@ -28,6 +27,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/picture")
 public class PictureController {
@@ -90,7 +90,8 @@ public class PictureController {
         }
         Picture picture = BeanUtil.copyProperties(pictureUpdateRequest, Picture.class);
         //将标签List转换为 JSON
-        picture.setTags(JSONUtil.toJsonStr(picture.getTags()));
+        picture.setTags(JSONUtil.toJsonStr(pictureUpdateRequest.getTags()));
+
         //数据校验
         pictureService.validatePicture(picture);
         long id = picture.getId();
@@ -136,7 +137,7 @@ public class PictureController {
      * @param pictureQueryRequest 分页查询图片请求参数
      * @return 分页查询图片结果
      */
-    @GetMapping("/list/page")
+    @PostMapping("/list/page")
     @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<Picture>>listPictureByPage(@RequestBody PictureQueryRequest pictureQueryRequest) {
         long pageSize = pictureQueryRequest.getPageSize();
@@ -146,6 +147,31 @@ public class PictureController {
         return  ResultUtils.success(picturePage);
 
     }
+
+    /**
+     * 分页查询图片(用户,封装类)
+     * @param pictureQueryRequest 分页查询图片请求参数
+     * @param request HTTP请求对象
+     * @return 分页查询图片结果列表
+     */
+    @PostMapping("/list/page/vo")
+    public BaseResponse<Page<PictureVO>>listPictureVOByPage(@RequestBody PictureQueryRequest pictureQueryRequest,HttpServletRequest request) {
+        long pageSize = pictureQueryRequest.getPageSize();
+        long current = pictureQueryRequest.getCurrent();
+        //限制爬虫
+        ThrowUtils.throwIf(pageSize>20,ErrorCode.PARAMS_ERROR);
+        //查询数据库
+        Page<Picture> picturePage = pictureService.page(new Page<>(current, pageSize), pictureService.getQueryWrapper(pictureQueryRequest));
+        //返回图片封装类列表
+        return  ResultUtils.success(pictureService.getPictureVOPage(picturePage, request));
+    }
+
+    /**
+     * 编辑图片信息(仅本人/管理员可用)
+     * @param pictureEditRequest 编辑图片请求参数
+     * @param request HTTP请求对象
+     * @return 编辑结果
+     */
     @PostMapping("/edit")
     public BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest,HttpServletRequest request) {
         if(BeanUtil.isEmpty(pictureEditRequest)||pictureEditRequest.getId()<=0) {
@@ -153,7 +179,7 @@ public class PictureController {
         }
         Picture picture = BeanUtil.copyProperties(pictureEditRequest, Picture.class);
         //将标签List转换为 JSON
-        picture.setTags(JSONUtil.toJsonStr(picture.getTags()));
+        picture.setTags(JSONUtil.toJsonStr(pictureEditRequest.getTags()));
         //设置编辑时间
         picture.setEditTime(new Date());
         //数据校验
@@ -182,11 +208,36 @@ public class PictureController {
         PictureTagCategory pictureTagCategory = new PictureTagCategory();
 
         List<String> tagList = Arrays.asList("热门", "搞笑", "生活", "高清", "艺术", "校园", "背景", "简历", "创意");
-        List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报");
+        List<String> categoryList = Arrays.asList("模板", "电商", "表情包", "素材", "海报","壁纸");
 
         pictureTagCategory.setTagList(tagList);
         pictureTagCategory.setCategoryList(categoryList);
         return ResultUtils.success(pictureTagCategory);
+    }
+    /**
+     * 使用游标查询公开图片列表。
+     *
+     * @param cursorQueryRequest 查询条件和游标
+     * @param request HTTP 请求
+     * @return 游标查询结果
+     */
+    @PostMapping("/list/cursor/vo")
+    public BaseResponse<CursorPageVO<PictureVO>>
+    listPictureVOByCursor(
+            @RequestBody PictureCursorQueryRequest cursorQueryRequest,
+            HttpServletRequest request
+    ) {
+        ThrowUtils.throwIf(
+                cursorQueryRequest == null,
+                ErrorCode.PARAMS_ERROR
+        );
+
+        return ResultUtils.success(
+                pictureService.listPictureVOByCursor(
+                        cursorQueryRequest,
+                        request
+                )
+        );
     }
 
 }
