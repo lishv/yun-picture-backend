@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaoli.yunpicturebackend.model.dto.picture.PictureCursorQueryRequest;
 import com.xiaoli.yunpicturebackend.model.dto.picture.PictureQueryRequest;
+import com.xiaoli.yunpicturebackend.model.dto.picture.PictureReviewRequest;
 import com.xiaoli.yunpicturebackend.model.dto.picture.PictureUploadRequest;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -22,12 +23,12 @@ import javax.servlet.http.HttpServletRequest;
 public interface PictureService extends IService<Picture> {
     /**
      * 上传图片
-     * @param file 图片文件
+     * @param inputSource 图片文件或url
      * @param pictureUploadRequest 图片上传请求参数
      * @param loginUser 登录用户对象
      * @return 图片VO类
      */
-    public PictureVO uploadPicture(MultipartFile file, PictureUploadRequest pictureUploadRequest, User loginUser) ;
+    public PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) ;
 
     /**
      * 获取查询条件对象
@@ -69,4 +70,18 @@ public interface PictureService extends IService<Picture> {
             PictureCursorQueryRequest pictureCursorQueryRequest,
             HttpServletRequest request
     );
+
+    /**
+     * 图片审核
+     * @param pictureReviewRequest
+     * @param loginUser
+     */
+    void doPictureReview(PictureReviewRequest pictureReviewRequest,User loginUser);
+
+    /**
+     * 填充审核参数
+     * @param picture 图片实体类
+     * @param loginUser 登录用户实体类
+     */
+    void fillReviewParams(Picture picture, User loginUser);
 }

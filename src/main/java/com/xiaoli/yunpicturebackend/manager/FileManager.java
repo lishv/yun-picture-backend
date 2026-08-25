@@ -22,6 +22,7 @@ import java.util.*;
 
 @Service
 @Slf4j
+@Deprecated //已废弃,请使用upload包的方法
 public class FileManager {
     @Resource
     private CosClientConfig cosClientConfig;

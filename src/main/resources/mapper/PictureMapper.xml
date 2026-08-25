@@ -16,16 +16,21 @@
             <result property="picHeight" column="picHeight" />
             <result property="picScale" column="picScale" />
             <result property="picFormat" column="picFormat" />
-            <result property="userID" column="userID" />
+            <result property="userId" column="userId" />
             <result property="createTime" column="createTime" />
             <result property="editTime" column="editTime" />
             <result property="updateTime" column="updateTime" />
             <result property="isDelete" column="isDelete" />
+            <result property="reviewStatus" column="reviewStatus" />
+            <result property="reviewMessage" column="reviewMessage" />
+            <result property="reviewerId" column="reviewerId" />
+            <result property="reviewTime" column="reviewTime" />
     </resultMap>
 
     <sql id="Base_Column_List">
         id,url,name,introduction,category,tags,
         picSize,picWidth,picHeight,picScale,picFormat,
-        userID,createTime,editTime,updateTime,isDelete
+        userID,createTime,editTime,updateTime,isDelete,
+        reviewStatus,reviewMessage,reviewerId,reviewTime
     </sql>
 </mapper>
