@@ -117,8 +117,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         /**
          * 支持外层自定义图片名称
          */
-        String picName= pictureUploadRequest.getPicName();
-        if(StrUtil.isNotBlank(picName)){
+        String picName= uploadPictureResult.getPicName();
+        if(pictureUploadRequest!=null&&StrUtil.isNotBlank(pictureUploadRequest.getPicName())) {
           picName=pictureUploadRequest.getPicName();
         }
         picture.setName(picName);

@@ -314,8 +314,7 @@ public class PictureController {
      */
     @PostMapping("/edit")
     public BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest,HttpServletRequest request) {
-        if(BeanUtil.isEmpty(pictureEditRequest)||pictureEditRequest.getId()<=0||pictureEditRequest.getId()>20) {
-            //限制爬虫
+        if(BeanUtil.isEmpty(pictureEditRequest)||pictureEditRequest.getId()<=0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         Picture picture = BeanUtil.copyProperties(pictureEditRequest, Picture.class);
