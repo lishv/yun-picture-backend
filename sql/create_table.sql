@@ -58,3 +58,9 @@ ALTER TABLE picture
 
 -- 创建基于 reviewStatus 列的索引
 CREATE INDEX idx_reviewStatus ON picture (reviewStatus);
+-- 增加图片图片来源地址哈希字段
+ALTER TABLE picture
+    ADD COLUMN sourceHash VARCHAR(64) NULL COMMENT '图片来源地址哈希';
+-- 创建唯一索引
+ALTER TABLE picture
+    ADD UNIQUE KEY uk_picture_sourceHash (sourceHash);

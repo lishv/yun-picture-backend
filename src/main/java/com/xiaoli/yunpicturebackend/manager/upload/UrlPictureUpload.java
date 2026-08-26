@@ -58,32 +58,33 @@ public class UrlPictureUpload extends PictureUploadTemplate {
             if (httpResponse.getStatus()!= HttpStatus.HTTP_OK) {
                 return;
             }
+            //5.文件存在,文件类型校验,文件大小校验
+            String contentType = httpResponse.header("Content-Type");
+            if(StrUtil.isNotEmpty(contentType)){
+                //允许图片类型
+                final List<String> ALLOW_CONTENT = Arrays.asList("image/jpeg","image/png","image/gif","image/webp","image/jpg");
+                ThrowUtils.throwIf(!ALLOW_CONTENT.contains(contentType), ErrorCode.PARAMS_ERROR,"文件类型错误");
+                //文件大小校验
+                String contentLengthStr = httpResponse.header("Content-Length");
+                if (StrUtil.isNotEmpty(contentLengthStr)) {
+                    try{
+
+                        long contentLength = Long.parseLong(contentLengthStr);
+                        final long ONE_M=1024*1024;
+                        ThrowUtils.throwIf(contentLength>8*ONE_M,ErrorCode.PARAMS_ERROR,"文件大小不能超过8MB");
+
+                    }catch (Exception e){
+                        throw new BusinessException(ErrorCode.PARAMS_ERROR,"文件大小格式异常");
+                    }
+                }
+            }
         } finally{
 
             if(httpResponse!=null){
                 httpResponse.close();
             }
         }
-        //5.文件存在,文件类型校验,文件大小校验
-        String contentType = httpResponse.header("Content-Type");
-        if(StrUtil.isNotEmpty(contentType)){
-            //允许图片类型
-            final List<String> ALLOW_CONTENT = Arrays.asList("image/jpeg","image/png","image/gif","image/webp","image/jpg");
-            ThrowUtils.throwIf(!ALLOW_CONTENT.contains(contentType), ErrorCode.PARAMS_ERROR,"文件类型错误");
-            //文件大小校验
-            String contentLengthStr = httpResponse.header("Content-Length");
-            if (StrUtil.isNotEmpty(contentLengthStr)) {
-                try{
 
-                    long contentLength = Long.parseLong(contentLengthStr);
-                    final long ONE_M=1024*1024;
-                    ThrowUtils.throwIf(contentLength>8*ONE_M,ErrorCode.PARAMS_ERROR,"文件大小不能超过8MB");
-
-                }catch (Exception e){
-                    throw new BusinessException(ErrorCode.PARAMS_ERROR,"文件大小格式异常");
-                }
-            }
-        }
 
 
     }

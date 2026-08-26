@@ -114,4 +114,9 @@ public class Picture implements Serializable {
      * 审核时间
      */
     private Date reviewTime;
+
+    /**
+     * 图片来源地址哈希
+     */
+    private String sourceHash;
 }

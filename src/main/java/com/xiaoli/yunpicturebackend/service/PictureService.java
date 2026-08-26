@@ -2,18 +2,17 @@ package com.xiaoli.yunpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureCursorQueryRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureQueryRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureReviewRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.xiaoli.yunpicturebackend.model.dto.picture.*;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaoli.yunpicturebackend.model.entity.User;
 import com.xiaoli.yunpicturebackend.model.vo.CursorPageVO;
 import com.xiaoli.yunpicturebackend.model.vo.PictureVO;
+import io.swagger.models.auth.In;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author LiShuwen
@@ -84,4 +83,12 @@ public interface PictureService extends IService<Picture> {
      * @param loginUser 登录用户实体类
      */
     void fillReviewParams(Picture picture, User loginUser);
+
+    /**
+     * 批量上传图片
+     * @param pictureUploadByBatchRequest 图片上传批量请求参数
+     * @param loginUser 登录用户对象
+     * @return 上传成功数量
+     */
+    Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest, User loginUser);
 }

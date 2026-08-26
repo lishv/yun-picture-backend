@@ -1,6 +1,7 @@
 package com.xiaoli.yunpicturebackend.controller;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaoli.yunpicturebackend.annotation.AuthCheck;
 import com.xiaoli.yunpicturebackend.common.BaseResponse;
@@ -87,8 +88,14 @@ public class PictureController {
         if(!oldPicture.getUserId().equals(loginUser.getId())&&!userService.isAdmin(loginUser)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
-        //删除操作数据库
-        boolean result = pictureService.removeById(id);
+        //软删除,删除操作数据库
+        //如果图片来源地址哈希不为空,则删除图片来源地址哈希
+        UpdateWrapper<Picture> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("id", id)
+                .eq("isDelete", 0)
+                .set("sourceHash", null)
+                .set("isDelete", 1);
+        boolean result = pictureService.update(updateWrapper);
         ThrowUtils.throwIf(!result,ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(result);
     }
@@ -267,6 +274,21 @@ public class PictureController {
         User loginUser = userService.getLoginUser(request);
         pictureService.doPictureReview(pictureReviewRequest, loginUser);
         return ResultUtils.success(true);
+
+    }
+    /**
+     * 批量抓取图片
+     * @param pictureUploadByBatchRequest  批量抓取图片请求参数
+     * @param request HTTP请求对象
+     * @return 审核结果
+     */
+    @AuthCheck(mustRole =UserConstant.ADMIN_ROLE)
+    @PostMapping("/upload/batch")
+    public BaseResponse<Integer> uploadPictureByBatch( @RequestBody PictureUploadByBatchRequest pictureUploadByBatchRequest,HttpServletRequest request) {
+        ThrowUtils.throwIf(pictureUploadByBatchRequest == null,ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(request);
+        Integer uploadCount = pictureService.uploadPictureByBatch(pictureUploadByBatchRequest, loginUser);
+        return ResultUtils.success(uploadCount);
 
     }
 

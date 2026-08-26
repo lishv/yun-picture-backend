@@ -1,4 +1,5 @@
 package com.xiaoli.yunpicturebackend.service.impl;
+import java.io.IOException;
 import java.util.List;
 import java.util.Date;
 
@@ -6,6 +7,9 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.crypto.digest.DigestUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -17,10 +21,7 @@ import com.xiaoli.yunpicturebackend.manager.upload.FilePictureUpload;
 import com.xiaoli.yunpicturebackend.manager.upload.PictureUploadTemplate;
 import com.xiaoli.yunpicturebackend.manager.upload.UrlPictureUpload;
 import com.xiaoli.yunpicturebackend.model.dto.file.UploadPictureResult;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureCursorQueryRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureQueryRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureReviewRequest;
-import com.xiaoli.yunpicturebackend.model.dto.picture.PictureUploadRequest;
+import com.xiaoli.yunpicturebackend.model.dto.picture.*;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.xiaoli.yunpicturebackend.model.entity.User;
 import com.xiaoli.yunpicturebackend.model.enums.PictureReviewStatusEnmu;
@@ -30,7 +31,13 @@ import com.xiaoli.yunpicturebackend.model.vo.UserVO;
 import com.xiaoli.yunpicturebackend.service.PictureService;
 import com.xiaoli.yunpicturebackend.mapper.PictureMapper;
 import com.xiaoli.yunpicturebackend.service.UserService;
+import lombok.extern.slf4j.Slf4j;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,6 +51,7 @@ import java.util.stream.Collectors;
 * @description 针对表【picture(图片)】的数据库操作Service实现
 * @createDate 2026-08-06 23:05:07
 */
+@Slf4j
 @Service
 public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> implements PictureService{
     @Resource
@@ -91,11 +99,29 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         if (inputSource instanceof String) {
             pictureUploadTemplate = urlPictureUpload;
         }
+        //获取上传图片的结果
         UploadPictureResult uploadPictureResult = pictureUploadTemplate.uploadPicture(inputSource,uploadPathPrefix);
         //构造入库的图片信息
         Picture picture = new Picture();
         BeanUtil.copyProperties(uploadPictureResult,picture);
-        picture.setName(uploadPictureResult.getPicName());
+        if (pictureUploadRequest!=null&&StrUtil.isNotBlank(pictureUploadRequest.getSourceHash())) {
+            picture.setSourceHash(pictureUploadRequest.getSourceHash());
+        }
+        //将分类和标签设置到图片对象
+        if(pictureUploadRequest!=null&&StrUtil.isNotBlank(pictureUploadRequest.getCategory())){
+            picture.setCategory(pictureUploadRequest.getCategory());
+        }
+        if(pictureUploadRequest!=null&&StrUtil.isNotBlank(pictureUploadRequest.getTags())){
+            picture.setTags(JSONUtil.toJsonStr(pictureUploadRequest.getTags()));
+        }
+        /**
+         * 支持外层自定义图片名称
+         */
+        String picName= pictureUploadRequest.getPicName();
+        if(StrUtil.isNotBlank(picName)){
+          picName=pictureUploadRequest.getPicName();
+        }
+        picture.setName(picName);
         picture.setUserId(loginUser.getId());
         //填充审核参数
         fillReviewParams(picture, loginUser);
@@ -440,6 +466,122 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
 
 
 
+    }
+
+    /**
+     * 批量上传图片
+     * @param pictureUploadByBatchRequest 图片上传批量请求参数
+     * @param loginUser 登录用户对象
+     * @return 上传成功数量
+     */
+    @Override
+    public Integer uploadPictureByBatch(PictureUploadByBatchRequest pictureUploadByBatchRequest, User loginUser) {
+        //1.校验参数
+        String searchText = pictureUploadByBatchRequest.getSearchText();
+        Integer count = pictureUploadByBatchRequest.getCount();
+        Integer offset = pictureUploadByBatchRequest.getOffset();
+        if (offset == null) {
+            offset=0;
+        }
+        ThrowUtils.throwIf(searchText==null||count==null||count<=0||count>30||offset<0, ErrorCode.PARAMS_ERROR);
+        //2.抓取内容
+        String fetchUrl=String.format(
+                "https://cn.bing.com/images/async?q=%s&mmasync=1&first=%d&count=%d",
+                searchText,offset+1,count);
+        //jsoup解析html文档
+        Document document;
+        try {
+            document = Jsoup.connect(fetchUrl).get();
+
+        } catch (IOException e) {
+            log.error("获取页面失败",e);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"获取页面失败，请稍后重试");
+        }
+        //3.解析内容
+        Element div = document.getElementsByClass("dgControl").first();//div
+        if (div==null) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"获取元素失败");
+        }
+        //选取图片标签且class为mimg的
+        Elements imgElementList = div.select("img.mimg");
+        //遍历元素,依次上传图片
+        int uploadCount = 0;//上传成功数量
+        String namePrefix = pictureUploadByBatchRequest.getNamePrefix();
+        if(StrUtil.isBlank(namePrefix)){
+            namePrefix=searchText;
+        }
+        for(Element imgElement : imgElementList){
+            //获取图片url
+            String fileUrl = imgElement.attr("src");//图片的属性为src的内容(即Url)
+            if(StrUtil.isBlank(fileUrl)){
+                log.info("当前链接为空,已跳过:{}",fileUrl);
+                continue;
+            }
+            //处理图片地址,防止转义或对象存储冲突问题
+            //dadw123.com?a=1&b=2.应该只保留前面dadw123.com
+            int questionMarkIndex = fileUrl.indexOf("?");
+            if(questionMarkIndex>-1){
+                fileUrl=fileUrl.substring(0,questionMarkIndex);
+            }
+
+            String sourceHash = getSourceHash(fileUrl);
+            if (existsActivePictureBySourceHash(sourceHash)) {
+                log.info("当前有效图片已经存在，跳过，sourceHash={}, url={}", sourceHash, fileUrl);
+                continue;
+            }
+
+            PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
+            pictureUploadRequest.setFileUrl(fileUrl);
+            pictureUploadRequest.setPicName(namePrefix+(uploadCount+1));
+            // 设置后端内部字段，客户端不能直接传入
+            pictureUploadRequest.setSourceHash(sourceHash);
+            //将本批次照片统一设置为相同分类和标签
+            pictureUploadRequest.setCategory(pictureUploadByBatchRequest.getCategory());
+            pictureUploadRequest.setTags(pictureUploadByBatchRequest.getTags());
+            //4.上传图片
+            try {
+                PictureVO pictureVO = this.uploadPicture(fileUrl, pictureUploadRequest, loginUser);
+                log.info("图片上传成功,id={},url={},sourceHash={}",pictureVO.getId(),pictureVO.getUrl(),sourceHash);
+                uploadCount++;
+            } catch (DuplicateKeyException e) {
+                // 数据库唯一索引处理并发重复
+                log.info("图片来源已经存在，跳过重复数据，sourceHash={}, url={}", sourceHash, fileUrl);
+                continue;
+            } catch (Exception e) {
+                log.error("图片上传失败，sourceHash={}, url={}", sourceHash, fileUrl, e);
+                continue;
+            }
+            //终止条件
+            if(uploadCount>=count){
+                break;
+            }
+
+        }
+        return uploadCount;
+    }
+    /**
+     * 判断有效图片是否已经存在相同来源
+     */
+    private boolean existsActivePictureBySourceHash(String sourceHash) {
+        if (StrUtil.isBlank(sourceHash)) {
+            return false;
+        }
+        return this.lambdaQuery()
+                .eq(Picture::getSourceHash, sourceHash)
+                .eq(Picture::getIsDelete, 0)
+                .count() > 0;
+    }
+
+    /**
+     * 获取图片来源哈希值
+     * @param fileUrl 图片URL
+     * @return 图片来源哈希值
+     */
+    private String getSourceHash( String fileUrl) {
+        if (StrUtil.isBlank(fileUrl)) {
+            return null;
+        }
+        return DigestUtil.sha256Hex(fileUrl.trim());
     }
 }
 
