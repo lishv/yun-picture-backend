@@ -1,6 +1,7 @@
 package com.xiaoli.yunpicturebackend.manager;
 
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
 import com.qcloud.cos.COSClient;
 import com.qcloud.cos.model.COSObject;
 import com.qcloud.cos.model.GetObjectRequest;
@@ -66,10 +67,14 @@ public class CosManager {
         rules.add(compressRule);
         //2.2 规则2.缩略图处理
         if(file.length()>20*1024){
-        String thumbnailKey = FileUtil.mainName(key) + "_thumbnail."+FileUtil.getSuffix(key);
+            String suffix=FileUtil.getSuffix(key);
+            if(StrUtil.isBlank(suffix)){
+                suffix="webp";
+            }
+        String thumbnailKey = FileUtil.mainName(key) + "_thumbnail."+suffix;
         PicOperations.Rule thumbnailRule = new PicOperations.Rule();
         thumbnailRule.setBucket(cosClientConfig.getBucket());
-        thumbnailRule.setRule(String.format("imageMogr2/thumbnail/%s%s", 256,256));
+        thumbnailRule.setRule(String.format("imageMogr2/thumbnail/%sx%s", 384,384));
         thumbnailRule.setFileId(thumbnailKey);
         rules.add(thumbnailRule);
         }
