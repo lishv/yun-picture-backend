@@ -2,6 +2,11 @@ server:
   port: 8123
   servlet:
     context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
+
 spring:
   application:
     name: yun-picture-backend
@@ -22,6 +27,13 @@ spring:
     port: 6379
     password: L2570410870
     timeout: 5000
+  # session 配置
+  session:
+    store-type: redis
+    # session 30 天过期
+    timeout: 2592000
+
+#mybatis-plus配置
 mybatis-plus:
   configuration:
     # 映射语句名称的自动匹配:关,因为全部使用驼峰命名法

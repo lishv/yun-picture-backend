@@ -83,4 +83,17 @@ public class CosManager {
         putObjectRequest.setPicOperations(picOperations);
         return cosClient.putObject(putObjectRequest);
     }
+
+    /**
+     * 删除对象
+     * @param url  对象路径
+     */
+    public void deleteObject(String url){
+        if(StrUtil.isBlank(url)){
+            return;
+        }
+        String key=url.replace(cosClientConfig.getHost()+"/","");
+        cosClient.deleteObject(cosClientConfig.getBucket(),key);
+    }
+
 }

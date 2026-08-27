@@ -16,6 +16,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoli.yunpicturebackend.exception.BusinessException;
 import com.xiaoli.yunpicturebackend.exception.ErrorCode;
 import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicturebackend.manager.CosManager;
 import com.xiaoli.yunpicturebackend.manager.FileManager;
 import com.xiaoli.yunpicturebackend.manager.upload.FilePictureUpload;
 import com.xiaoli.yunpicturebackend.manager.upload.PictureUploadTemplate;
@@ -38,6 +39,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -62,6 +64,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
     private UrlPictureUpload urlPictureUpload;
     @Autowired
     private UserService userService;
+    @Autowired
+    private CosManager cosManager;
 
     /**
      * 上传图片
@@ -80,10 +84,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             pictureId = pictureUploadRequest.getId();
         }
         //如果更新,判断图片是否存在且用户是否有权限编辑
+        Picture oldPicture = null;
         if(pictureId!=null){
-            Picture oldPicture = this.getById(pictureId);
+            oldPicture = this.getById(pictureId);
             ThrowUtils.throwIf(oldPicture==null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
-            //进本人或者管理员可编辑图片
+            //仅本人或者管理员可编辑图片
             if(!oldPicture.getUserId().equals(loginUser.getId())&&!userService.isAdmin(loginUser)){
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
             }
@@ -135,6 +140,10 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
         //更新或者新增
         boolean result = this.saveOrUpdate(picture);
+        //如果是更新可以自行删除旧图片文件
+        if(pictureId!=null&&BeanUtil.isNotEmpty(oldPicture)){
+            cosManager.deleteObject(oldPicture.getUrl());
+        }
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "图片上传失败,数据库操作失败");
 
         return PictureVO.objToVo(picture);
@@ -560,6 +569,44 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
         return uploadCount;
     }
+
+    /**
+     * 异步删除图片文件
+     * @param oldPicture 图片实体类
+     */
+    @Async
+    @Override
+    public void clearPictureFile(Picture oldPicture) {
+        //判断图片是否被多条记录使用
+        Long count = this.lambdaQuery()
+                .eq(Picture::getUrl, oldPicture.getUrl())
+                .count();
+        if (count > 1) {
+            //被多条记录使用,不删除
+            return;
+        }
+        //删除图片文件(即压缩图)
+        String url = oldPicture.getUrl();
+        cosManager.deleteObject(url);
+
+        /**
+         *  //删除压缩图
+         *         String[] split = url.split("\\.");
+         *         //删除压缩图
+         *         StringBuilder sb=new StringBuilder();
+         *         for(int i=0;i<split.length-1;i++){
+         *             sb.append(split[i]).append(".");
+         *         }
+         *         sb.append("webp");
+         *         String compressUrl=sb.toString();
+         *         cosManager.deleteObject(compressUrl);
+         */
+        //删除缩略图
+        cosManager.deleteObject(oldPicture.getThumbnailUrl());
+
+
+    }
+
     /**
      * 判断有效图片是否已经存在相同来源
      */

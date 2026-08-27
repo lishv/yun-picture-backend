@@ -141,7 +141,7 @@ public abstract class PictureUploadTemplate {
         double pictureScale= NumberUtil.round(picWidth*1.0/picHeight,2).doubleValue();
         //返回可以访问的文件地址
         UploadPictureResult uploadPictureResult = new UploadPictureResult();
-        uploadPictureResult.setUrl(cosClientConfig.getHost()+"/"+ compressedCiObject.getKey());
+        uploadPictureResult.setUrl(cosClientConfig.getHost()+"/"+ compressedCiObject.getKey());//这是压缩后的webp图片地址
         uploadPictureResult.setPicName(FileUtil.mainName(originalFilename));
         uploadPictureResult.setPicSize(compressedCiObject.getSize().longValue());
         uploadPictureResult.setPicWidth(picWidth);
@@ -149,7 +149,7 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicScale(pictureScale);
         uploadPictureResult.setPicFormat(format);
         if(BeanUtil.isNotEmpty(thumbnailCiObject)){
-            uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost()+"/"+ thumbnailCiObject.getKey());
+            uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost()+"/"+ thumbnailCiObject.getKey());//这是缩略图地址
         }
 
         return uploadPictureResult;

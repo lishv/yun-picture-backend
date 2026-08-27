@@ -115,6 +115,8 @@ public class PictureController {
                 .set("isDelete", 1);
         boolean result = pictureService.update(updateWrapper);
         ThrowUtils.throwIf(!result,ErrorCode.OPERATION_ERROR);
+        //异步删除图片文件
+        pictureService.clearPictureFile(oldPicture);
         return ResultUtils.success(result);
     }
 
