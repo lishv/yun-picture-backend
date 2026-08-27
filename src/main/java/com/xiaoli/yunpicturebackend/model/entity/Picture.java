@@ -119,4 +119,8 @@ public class Picture implements Serializable {
      * 图片来源地址哈希
      */
     private String sourceHash;
+    /**
+     * 缩略图 url
+     */
+    private String thumbnailUrl;
 }

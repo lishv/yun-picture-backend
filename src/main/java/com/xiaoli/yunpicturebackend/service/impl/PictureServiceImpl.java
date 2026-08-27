@@ -123,6 +123,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         }
         picture.setName(picName);
         picture.setUserId(loginUser.getId());
+        picture.setThumbnailUrl(uploadPictureResult.getThumbnailUrl());
         //填充审核参数
         fillReviewParams(picture, loginUser);
         //操作数据库

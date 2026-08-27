@@ -1,5 +1,6 @@
 package com.xiaoli.yunpicturebackend.manager.upload;
 
+import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.io.FileUtil;
@@ -62,8 +63,12 @@ public abstract class PictureUploadTemplate {
             if(CollUtil.isNotEmpty(objectList)){
                 //获取压缩之后得到文件信息
                 CIObject compressedCiObject = objectList.get(0);//获取第一个图片处理结果
+                CIObject thumbnailCiObject = null;
+                if(objectList.size()>1) {
+                    thumbnailCiObject = objectList.get(1);//获取第二个图片处理结果
+                }
                 //封装压缩图的返回结果
-                return buildResult(originalFilename, compressedCiObject);
+                return buildResult(originalFilename, compressedCiObject,thumbnailCiObject);
             }
             //5.若未压缩,获取上传图片的信息,返回上传图片的结果对象
             ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
@@ -121,9 +126,10 @@ public abstract class PictureUploadTemplate {
      * 封装返回结果
      * @param originalFilename 用户上传的原文件名
      * @param compressedCiObject 压缩后的图片信息
+     * @param thumbnailCiObject 缩略图信息,若未压缩,则为缩略图信息
      * @return 上传图片的结果对象
      */
-    private UploadPictureResult buildResult(String originalFilename, CIObject compressedCiObject) {
+    private UploadPictureResult buildResult(String originalFilename, CIObject compressedCiObject,CIObject thumbnailCiObject) {
         String format = compressedCiObject.getFormat();//图片格式,例如jpg,png等
         int picWidth = compressedCiObject.getWidth();//图片宽度
         int picHeight = compressedCiObject.getHeight();//图片高度
@@ -142,6 +148,9 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicHeight(picHeight);
         uploadPictureResult.setPicScale(pictureScale);
         uploadPictureResult.setPicFormat(format);
+        if(BeanUtil.isNotEmpty(thumbnailCiObject)){
+            uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost()+"/"+ thumbnailCiObject.getKey());
+        }
 
         return uploadPictureResult;
     }
