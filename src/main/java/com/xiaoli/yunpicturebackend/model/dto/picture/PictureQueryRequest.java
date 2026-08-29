@@ -16,7 +16,18 @@ public class PictureQueryRequest extends PageRequest implements Serializable {
      * id
      */
     private Long id;
-
+    /**
+     * 空间 id
+     */
+    private Long spaceId;
+    /**
+     * 是否指查询spaceId为null的图片,因此查询公共图片只需设置为true,默认false代表查询非公共图片,true代表查询公共图片
+     */
+    private  Boolean nullSpaceId=false;
+    /**
+     * 是否查询所有图片
+     */
+    private Boolean isAll = false;
     /**
      * 图片名称
      */

@@ -13,6 +13,16 @@ public class PictureCursorQueryRequest implements Serializable {
      * 搜索词，同时搜索名称和简介
      */
     private String searchText;
+    /**
+     * 空间 ID
+     * 为空时查询公共图片
+     */
+    private Long spaceId;
+    /**
+     * 是否指查询spaceId为null的图片,因此查询公共图片只需设置为true
+     */
+    private  Boolean nullSpaceId ;
+
 
     /**
      * 图片分类

@@ -2,6 +2,7 @@ package com.xiaoli.yunpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xiaoli.yunpicturebackend.common.BaseResponse;
 import com.xiaoli.yunpicturebackend.model.dto.picture.*;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -9,6 +10,7 @@ import com.xiaoli.yunpicturebackend.model.entity.User;
 import com.xiaoli.yunpicturebackend.model.vo.CursorPageVO;
 import com.xiaoli.yunpicturebackend.model.vo.PictureVO;
 import io.swagger.models.auth.In;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
@@ -97,4 +99,26 @@ public interface PictureService extends IService<Picture> {
      * @param picture 图片实体类
      */
     void clearPictureFile(Picture picture);
+    /**
+     * 校验空间的图片权限
+     * @param picture 图片实体类
+     */
+    void checkPictureAuth(User loginUser, Picture picture);
+
+    /**
+     * 删除图片
+     * @param pictureId 图片ID
+     * @param loginUser 登录用户对象
+
+     */
+
+    void deletePicture(long pictureId, User loginUser);
+
+    /**
+     * 编辑图片
+     * @param pictureEditRequest 图片编辑请求参数
+     * @param loginUser 登录用户对象
+     * @return
+     */
+    BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest, User loginUser);
 }

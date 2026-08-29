@@ -77,10 +77,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserPassword(encryptPassword);
         user.setUserName("用户"+ UUID.randomUUID().toString());
         user.setUserRole(UserRoleEnum.User.getValue());
-//        ToDo:时间格式化
-//        user.setCreateTime(DateTime.now());
-//        user.setUpdateTime(DateTime.now());
-//        user.setEditTime(DateTime.now());
+
         boolean result = this.save(user);
         ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "注册失败,数据库操作失败");
         //mybatis-plus默认返回插入的id,这里返回用户id
