@@ -56,7 +56,8 @@ public abstract class PictureUploadTemplate {
             processFile(inputSource,file);
             //4上传file到cos
             PutObjectResult putObjectResult = cosManager.putPictureObject(uploadPath, file);
-
+            //获取图片信息
+            ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
             //进行上传压缩后,获取图片处理结果
             ProcessResults processResults = putObjectResult.getCiUploadResult().getProcessResults();
             List<CIObject> objectList = processResults.getObjectList();//得到图片处理结果列表
@@ -68,10 +69,9 @@ public abstract class PictureUploadTemplate {
                     thumbnailCiObject = objectList.get(1);//获取第二个图片处理结果
                 }
                 //封装压缩图的返回结果
-                return buildResult(originalFilename, compressedCiObject,thumbnailCiObject);
+                return buildResult(originalFilename, compressedCiObject,thumbnailCiObject,imageInfo);
             }
             //5.若未压缩,获取上传图片的信息,返回上传图片的结果对象
-            ImageInfo imageInfo = putObjectResult.getCiUploadResult().getOriginalInfo().getImageInfo();
             return buildResult(imageInfo, uploadPath, originalFilename, file);
         } catch (IOException e) {
             log.error("file upload ,filePath:{}",uploadPath,e);
@@ -127,9 +127,10 @@ public abstract class PictureUploadTemplate {
      * @param originalFilename 用户上传的原文件名
      * @param compressedCiObject 压缩后的图片信息
      * @param thumbnailCiObject 缩略图信息,若未压缩,则为缩略图信息
+     * @param imageInfo 图片信息
      * @return 上传图片的结果对象
      */
-    private UploadPictureResult buildResult(String originalFilename, CIObject compressedCiObject,CIObject thumbnailCiObject) {
+    private UploadPictureResult buildResult(String originalFilename, CIObject compressedCiObject,CIObject thumbnailCiObject,ImageInfo imageInfo) {
         String format = compressedCiObject.getFormat();//图片格式,例如jpg,png等
         int picWidth = compressedCiObject.getWidth();//图片宽度
         int picHeight = compressedCiObject.getHeight();//图片高度
@@ -148,6 +149,9 @@ public abstract class PictureUploadTemplate {
         uploadPictureResult.setPicHeight(picHeight);
         uploadPictureResult.setPicScale(pictureScale);
         uploadPictureResult.setPicFormat(format);
+        //图片主色调
+        uploadPictureResult.setPicColor(imageInfo.getAve());
+        //设置缩略图地址
         if(BeanUtil.isNotEmpty(thumbnailCiObject)){
             uploadPictureResult.setThumbnailUrl(cosClientConfig.getHost()+"/"+ thumbnailCiObject.getKey());//这是缩略图地址
         }
@@ -182,6 +186,8 @@ private UploadPictureResult buildResult(ImageInfo imageInfo, String uploadPath, 
     uploadPictureResult.setPicHeight(picHeight);
     uploadPictureResult.setPicScale(pictureScale);
     uploadPictureResult.setPicFormat(format);
+    //图片主色调
+    uploadPictureResult.setPicColor(imageInfo.getAve());
 
     return uploadPictureResult;
 }

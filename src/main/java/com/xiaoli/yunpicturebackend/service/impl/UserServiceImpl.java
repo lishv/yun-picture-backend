@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
@@ -77,12 +78,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         user.setUserPassword(encryptPassword);
         user.setUserName("用户"+ UUID.randomUUID().toString());
         user.setUserRole(UserRoleEnum.User.getValue());
-
         boolean result = this.save(user);
         ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "注册失败,数据库操作失败");
         //mybatis-plus默认返回插入的id,这里返回用户id
         return user.getId();
     }
+
 /**
      * 用户登录
      * @param userLoginRequest   用户登录请求体

@@ -2,6 +2,7 @@ package com.xiaoli.yunpicturebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.xiaoli.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.xiaoli.yunpicturebackend.common.BaseResponse;
 import com.xiaoli.yunpicturebackend.model.dto.picture.*;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
@@ -118,7 +119,32 @@ public interface PictureService extends IService<Picture> {
      * 编辑图片
      * @param pictureEditRequest 图片编辑请求参数
      * @param loginUser 登录用户对象
-     * @return
+     * @return 编辑成功
      */
     BaseResponse<Boolean> editPicture(@RequestBody PictureEditRequest pictureEditRequest, User loginUser);
+
+    /**
+     * 根据颜色查询图片
+     * @param spaceId 空间ID
+     * @param picColor 图片颜色
+     * @param loginUser 登录用户对象
+     * @return 图片VO类列表
+     */
+    List<PictureVO> searchPictureByColor(Long spaceId, String picColor, User loginUser);
+
+    /**
+     * 批量编辑图片
+     * @param pictureEditByBatchRequest 图片编辑批量请求参数
+     * @param loginUser 登录用户对象
+     */
+    void editPictureByBatch(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser);
+
+    /**
+     * 创建图片括图任务
+     * @param createPictureOutPaintingTaskRequest 创建图片括图任务请求参数
+     * @param loginUser 登录用户对象
+     * @return 创建图片括图任务响应参数
+     */
+     CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser);
+
 }
