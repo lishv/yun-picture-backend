@@ -71,9 +71,7 @@ public class SpaceController {
         Space oldSpace = spaceService.getById(id);
         ThrowUtils.throwIf(BeanUtil.isEmpty(oldSpace),ErrorCode.NOT_FOUND_ERROR);
         //仅本人或者管理员可以删除,即如果这个空间不是本人上传的或者不是身份管理员,则不可以删除
-        if(!oldSpace.getUserId().equals(loginUser.getId())&&!userService.isAdmin(loginUser)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+       spaceService.checkSpaceAuth(loginUser, oldSpace);
         //软删除,删除操作数据库
         boolean result = spaceService.removeById(id);
         ThrowUtils.throwIf(!result,ErrorCode.OPERATION_ERROR);
@@ -193,9 +191,7 @@ public class SpaceController {
         ThrowUtils.throwIf(BeanUtil.isEmpty(oldSpace),ErrorCode.NOT_FOUND_ERROR);
 
         //仅本人/管理员可以编辑
-        if(!oldSpace.getUserId().equals(loginUser.getId())&&!userService.isAdmin(loginUser)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
+        spaceService.checkSpaceAuth(loginUser, oldSpace);
 
         //操作数据库
         boolean result = spaceService.updateById(space);
