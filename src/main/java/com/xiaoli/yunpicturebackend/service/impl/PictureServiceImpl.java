@@ -750,8 +750,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         // 判断是否存在
         Picture oldPicture = this.getById(pictureId);
         ThrowUtils.throwIf(BeanUtil.isEmpty(oldPicture), ErrorCode.NOT_FOUND_ERROR);
-        // 校验权限
-        checkPictureAuth(loginUser, oldPicture);
+        // 校验权限//改为使用注解鉴权
+        //checkPictureAuth(loginUser, oldPicture);
         // 操作数据库
         //软删除,直接统一设置为已删除状态,并删除图片来源地址哈希,并释放空间容量
         transactionTemplate.execute(status -> {
@@ -796,8 +796,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         Picture oldPicture = this.getById(id);
         ThrowUtils.throwIf(BeanUtil.isEmpty(oldPicture), ErrorCode.NOT_FOUND_ERROR);
 
-        //校验权限
-        checkPictureAuth(loginUser, oldPicture);
+        //校验权限//改为使用注解鉴权
+        //checkPictureAuth(loginUser, oldPicture);
         //填充审核参数
         fillReviewParams(picture, loginUser);
         //操作数据库
@@ -939,8 +939,8 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         //获取图片信息
         Long pictureId = createPictureOutPaintingTaskRequest.getPictureId();
         Picture picture = Optional.ofNullable(this.getById(pictureId)).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在"));
-        //校验权限
-        checkPictureAuth(loginUser, picture);
+        //校验权限//改为使用注解鉴权
+        //checkPictureAuth(loginUser, picture);
         //创建括图任务
         CreateOutPaintingTaskRequest taskRequest = new CreateOutPaintingTaskRequest();
         CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();

@@ -13,6 +13,7 @@ import lombok.Data;
 @TableName(value ="picture")
 @Data
 public class Picture implements Serializable {
+    @TableField(exist = false)
     private static final long serialVersionUID = 1247727794005797605L;
     /**
      * id

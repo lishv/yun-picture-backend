@@ -12,6 +12,7 @@ import com.xiaoli.yunpicturebackend.constant.UserConstant;
 import com.xiaoli.yunpicturebackend.exception.BusinessException;
 import com.xiaoli.yunpicturebackend.exception.ErrorCode;
 import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicturebackend.manager.auth.StpKit;
 import com.xiaoli.yunpicturebackend.model.dto.user.UserLoginRequest;
 import com.xiaoli.yunpicturebackend.model.dto.user.UserQueryRequest;
 import com.xiaoli.yunpicturebackend.model.dto.user.UserRegisterRequest;
@@ -118,6 +119,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         //2.保存用户登陆状态到session中
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE,user);
+        //3. 记录用户登录态到 Sa-token，便于空间鉴权时使用，注意保证该用户信息与 SpringSession 中的信息过期时间一致
+        StpKit.SPACE.login(user.getId());
+        StpKit.SPACE.getSession().set(UserConstant.USER_LOGIN_STATE,user);
         return this.getLoginUserVO(user);
     }
 

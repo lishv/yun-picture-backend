@@ -12,6 +12,7 @@ import com.xiaoli.yunpicturebackend.constant.UserConstant;
 import com.xiaoli.yunpicturebackend.exception.BusinessException;
 import com.xiaoli.yunpicturebackend.exception.ErrorCode;
 import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicturebackend.manager.auth.SpaceUserAuthManager;
 import com.xiaoli.yunpicturebackend.model.dto.space.SpaceAddRequest;
 import com.xiaoli.yunpicturebackend.model.dto.space.SpaceLevel;
 import com.xiaoli.yunpicturebackend.model.dto.space.SpaceQueryRequest;
@@ -25,6 +26,7 @@ import com.xiaoli.yunpicturebackend.service.SpaceService;
 import com.xiaoli.yunpicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
@@ -45,7 +47,7 @@ public class SpaceController {
     @Resource
     private UserService userService;
     @Resource
-    private StringRedisTemplate stringRedisTemplate;
+    private SpaceUserAuthManager spaceUserAuthManager;
 
     @PostMapping("/add")
     public BaseResponse<Long>addSpace(@RequestBody SpaceAddRequest  spaceAddRequest,HttpServletRequest request){
@@ -131,7 +133,12 @@ public class SpaceController {
         ThrowUtils.throwIf(id<=0,ErrorCode.PARAMS_ERROR);
         Space space = spaceService.getById(id);
         ThrowUtils.throwIf(BeanUtil.isEmpty(space),ErrorCode.NOT_FOUND_ERROR);
-        return ResultUtils.success(spaceService.getSpaceVO(space, request));
+        User loginUser = userService.getLoginUser(request);
+        //获取登录用户在空间内的权限列表
+        List<String> permissionList = spaceUserAuthManager.getPermissionList(space,loginUser);
+        SpaceVO spaceVO = spaceService.getSpaceVO(space, request);
+        spaceVO.setPermissionList(permissionList);
+        return ResultUtils.success(spaceVO);
     }
 
     /**
