@@ -106,10 +106,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
             if (BeanUtil.isEmpty(space)) {
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "空间不存在");
             }
-            //校验空间是否有权限,仅本人可上传图片
-            if (!loginUser.getId().equals(space.getUserId())) {
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-            }
+            //改为使用统一的权限
+//            //校验空间是否有权限,仅空间管理员可上传图片
+//            if (!loginUser.getId().equals(space.getUserId())) {
+//                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+//            }
             //校验额度
             if (space.getTotalCount() > space.getMaxCount()) {
                 throw new BusinessException(ErrorCode.OPERATION_ERROR, "空间条数不足");
@@ -131,10 +132,11 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture> impl
         if (pictureId != null) {
             oldPicture = this.getById(pictureId);
             ThrowUtils.throwIf(oldPicture == null, ErrorCode.NOT_FOUND_ERROR, "图片不存在");
-            //仅本人或者管理员可编辑图片
-            if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
-                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-            }
+            //改为使用统一的权限
+//            //仅本人或者管理员可编辑图片
+//            if (!oldPicture.getUserId().equals(loginUser.getId()) && !userService.isAdmin(loginUser)) {
+//                throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+//            }
             //校验空间是否与图片所属空间一致
             //没传空间id,则默认使用图片所属空间(这样也兼容公共空间)
             if (spaceId == null) {
