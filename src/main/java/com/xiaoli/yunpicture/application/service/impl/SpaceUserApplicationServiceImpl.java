@@ -13,6 +13,7 @@ import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserAddRequest;
+import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserEditRequest;
 import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserQueryRequest;
 import com.xiaoli.yunpicture.domain.space.entity.Space;
 import com.xiaoli.yunpicture.domain.space.entity.SpaceUser;
@@ -190,6 +191,25 @@ public class SpaceUserApplicationServiceImpl extends ServiceImpl<SpaceUserMapper
         ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR);
         // 操作数据库
         boolean result = this.removeById(id);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+    }
+
+    @Override
+    public void editSpaceUser(SpaceUserEditRequest spaceUserEditRequest, SpaceUser spaceUser, HttpServletRequest request) {
+        // 数据校验
+        this.validSpaceUser(spaceUser, false);
+        // 判断编辑空间关系是否存在
+        long id = spaceUserEditRequest.getId();
+        SpaceUser oldSpaceUser = this.getById(id);
+        ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR);
+        // 空间创建者的角色不允许被修改
+        Space space = spaceApplicationService.getById(oldSpaceUser.getSpaceId());
+        ThrowUtils.throwIf(space == null, ErrorCode.NOT_FOUND_ERROR, "空间不存在");
+        if (oldSpaceUser.getUserId().equals(space.getUserId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "不能修改空间创建者的权限");
+        }
+        // 操作数据库
+        boolean result = this.updateById(spaceUser);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
     }
 

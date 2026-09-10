@@ -1,7 +1,9 @@
 package com.xiaoli.yunpicture.interfaces.controller;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.xiaoli.yunpicture.application.service.SpaceApplicationService;
 import com.xiaoli.yunpicture.application.service.SpaceUserApplicationService;
+import com.xiaoli.yunpicture.domain.space.entity.Space;
 import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
 import com.xiaoli.yunpicture.infrastructure.common.DeleteRequest;
 import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
@@ -20,6 +22,7 @@ import com.xiaoli.yunpicture.interfaces.vo.space.SpaceUserVO;
 
 import com.xiaoli.yunpicture.application.service.UserApplicationService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +42,8 @@ public class SpaceUserController {
 
     @Resource
     private UserApplicationService userApplicationService;
+    @Resource
+    private SpaceApplicationService spaceApplicationService;
 
     /**
      * 添加成员到空间
@@ -102,15 +107,7 @@ public class SpaceUserController {
         }
         // 将实体类和 DTO 进行转换
         SpaceUser spaceUser = SpaceUserAssembler.toSpaceUserEntity(spaceUserEditRequest);
-        // 数据校验
-        spaceUserApplicationService.validSpaceUser(spaceUser, false);
-        // 判断是否存在
-        long id = spaceUserEditRequest.getId();
-        SpaceUser oldSpaceUser = spaceUserApplicationService.getById(id);
-        ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR);
-        // 操作数据库
-        boolean result = spaceUserApplicationService.updateById(spaceUser);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        spaceUserApplicationService.editSpaceUser(spaceUserEditRequest,spaceUser,request);
         return ResultUtils.success(true);
     }
 

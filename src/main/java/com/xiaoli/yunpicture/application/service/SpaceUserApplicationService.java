@@ -3,6 +3,7 @@ package com.xiaoli.yunpicture.application.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.xiaoli.yunpicture.infrastructure.common.DeleteRequest;
 import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserAddRequest;
+import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserEditRequest;
 import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserQueryRequest;
 import com.xiaoli.yunpicture.domain.space.entity.SpaceUser;
 import com.baomidou.mybatisplus.extension.service.IService;
@@ -59,4 +60,11 @@ public interface SpaceUserApplicationService extends IService<SpaceUser> {
      * @param request         http 请求
      */
     void deleteSpaceUser(DeleteRequest deleteRequest, HttpServletRequest request);
+
+    /**
+     * 编辑空间用户关联
+     * @param spaceUser       空间用户关联实体
+     * @param request         http 请求
+     */
+    void editSpaceUser(SpaceUserEditRequest spaceUserEditRequest, SpaceUser spaceUser,HttpServletRequest request);
 }
