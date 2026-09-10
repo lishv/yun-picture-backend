@@ -1,8 +1,8 @@
 package com.xiaoli.yunpicturebackend.manager.upload;
 
 import cn.hutool.core.io.FileUtil;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 

@@ -1,7 +1,7 @@
 package com.xiaoli.yunpicturebackend.controller;
 
-import com.xiaoli.yunpicturebackend.common.BaseResponse;
-import com.xiaoli.yunpicturebackend.common.ResultUtils;
+import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
+import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

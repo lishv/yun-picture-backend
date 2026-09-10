@@ -2,17 +2,17 @@ package com.xiaoli.yunpicturebackend.controller;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xiaoli.yunpicturebackend.annotation.AuthCheck;
-import com.xiaoli.yunpicturebackend.common.BaseResponse;
-import com.xiaoli.yunpicturebackend.common.DeleteRequest;
-import com.xiaoli.yunpicturebackend.common.ResultUtils;
-import com.xiaoli.yunpicturebackend.constant.UserConstant;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
-import com.xiaoli.yunpicturebackend.model.dto.user.*;
+import com.xiaoli.yunpicture.infrastructure.annotation.AuthCheck;
+import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
+import com.xiaoli.yunpicture.infrastructure.common.DeleteRequest;
+import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
+import com.xiaoli.yunpicture.interfaces.dto.user.*;
+import com.xiaoli.yunpicture.domain.user.constant.UserConstant;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import com.xiaoli.yunpicturebackend.model.entity.User;
 import com.xiaoli.yunpicturebackend.model.vo.LoginUserVo;
-import com.xiaoli.yunpicturebackend.model.vo.UserVO;
+import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import com.xiaoli.yunpicturebackend.service.UserService;
 import org.springframework.web.bind.annotation.*;
 

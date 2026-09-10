@@ -11,11 +11,11 @@ import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.model.ciModel.persistence.CIObject;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
 import com.qcloud.cos.model.ciModel.persistence.ProcessResults;
-import com.xiaoli.yunpicturebackend.config.CosClientConfig;
-import com.xiaoli.yunpicturebackend.exception.BusinessException;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.config.CosClientConfig;
+import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 
-import com.xiaoli.yunpicturebackend.manager.CosManager;
+import com.xiaoli.yunpicture.infrastructure.api.CosManager;
 import com.xiaoli.yunpicturebackend.model.dto.file.UploadPictureResult;
 import lombok.extern.slf4j.Slf4j;
 

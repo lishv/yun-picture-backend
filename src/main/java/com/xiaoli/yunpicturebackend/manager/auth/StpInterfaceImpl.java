@@ -9,8 +9,8 @@ import cn.hutool.extra.servlet.ServletUtil;
 import cn.hutool.http.ContentType;
 import cn.hutool.http.Header;
 import cn.hutool.json.JSONUtil;
-import com.xiaoli.yunpicturebackend.exception.BusinessException;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaoli.yunpicturebackend.model.entity.Picture;
 import com.xiaoli.yunpicturebackend.model.entity.Space;
@@ -31,7 +31,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
-import static com.xiaoli.yunpicturebackend.constant.UserConstant.USER_LOGIN_STATE;
+import static com.xiaoli.yunpicture.domain.user.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 自定义权限加载接口实现类

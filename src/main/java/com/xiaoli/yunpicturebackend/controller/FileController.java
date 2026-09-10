@@ -1,18 +1,15 @@
 package com.xiaoli.yunpicturebackend.controller;
 
-import cn.hutool.core.io.IoUtil;
-import cn.hutool.http.server.HttpServerResponse;
 import com.qcloud.cos.model.COSObject;
 import com.qcloud.cos.model.COSObjectInputStream;
-import com.qcloud.cos.transfer.Download;
 import com.qcloud.cos.utils.IOUtils;
-import com.xiaoli.yunpicturebackend.annotation.AuthCheck;
-import com.xiaoli.yunpicturebackend.common.BaseResponse;
-import com.xiaoli.yunpicturebackend.common.ResultUtils;
-import com.xiaoli.yunpicturebackend.constant.UserConstant;
-import com.xiaoli.yunpicturebackend.exception.BusinessException;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.manager.CosManager;
+import com.xiaoli.yunpicture.infrastructure.annotation.AuthCheck;
+import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
+import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
+import com.xiaoli.yunpicture.domain.user.constant.UserConstant;
+import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.api.CosManager;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;

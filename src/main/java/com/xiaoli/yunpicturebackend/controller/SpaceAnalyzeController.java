@@ -1,12 +1,12 @@
 package com.xiaoli.yunpicturebackend.controller;
 
 
-import com.xiaoli.yunpicturebackend.common.BaseResponse;
+import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
 
-import com.xiaoli.yunpicturebackend.common.ResultUtils;
+import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
 
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 
 import com.xiaoli.yunpicturebackend.model.dto.space.analyze.*;
 

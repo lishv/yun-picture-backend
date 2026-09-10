@@ -1,6 +1,6 @@
 package com.xiaoli.yunpicturebackend.manager.websocket.model;
 
-import com.xiaoli.yunpicturebackend.model.vo.UserVO;
+import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

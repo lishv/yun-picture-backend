@@ -1,6 +1,6 @@
 package com.xiaoli.yunpicturebackend.model.dto.picture;
 
-import com.xiaoli.yunpicturebackend.common.PageRequest;
+import com.xiaoli.yunpicture.infrastructure.common.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

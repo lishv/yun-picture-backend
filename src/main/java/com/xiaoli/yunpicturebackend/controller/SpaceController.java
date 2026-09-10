@@ -1,17 +1,15 @@
 package com.xiaoli.yunpicturebackend.controller;
 
 import cn.hutool.core.bean.BeanUtil;
-import cn.hutool.core.util.RandomUtil;
-import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xiaoli.yunpicturebackend.annotation.AuthCheck;
-import com.xiaoli.yunpicturebackend.common.BaseResponse;
-import com.xiaoli.yunpicturebackend.common.DeleteRequest;
-import com.xiaoli.yunpicturebackend.common.ResultUtils;
-import com.xiaoli.yunpicturebackend.constant.UserConstant;
-import com.xiaoli.yunpicturebackend.exception.BusinessException;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.annotation.AuthCheck;
+import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
+import com.xiaoli.yunpicture.infrastructure.common.DeleteRequest;
+import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
+import com.xiaoli.yunpicture.domain.user.constant.UserConstant;
+import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import com.xiaoli.yunpicturebackend.manager.auth.SpaceUserAuthManager;
 import com.xiaoli.yunpicturebackend.model.dto.space.SpaceAddRequest;
 import com.xiaoli.yunpicturebackend.model.dto.space.SpaceLevel;
@@ -20,14 +18,10 @@ import com.xiaoli.yunpicturebackend.model.dto.space.SpaceUpdateRequest;
 import com.xiaoli.yunpicturebackend.model.entity.Space;
 import com.xiaoli.yunpicturebackend.model.entity.User;
 import com.xiaoli.yunpicturebackend.model.enums.SpaceLevelEnum;
-import com.xiaoli.yunpicturebackend.model.vo.CursorPageVO;
 import com.xiaoli.yunpicturebackend.model.vo.SpaceVO;
 import com.xiaoli.yunpicturebackend.service.SpaceService;
 import com.xiaoli.yunpicturebackend.service.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.codec.digest.DigestUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -35,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j

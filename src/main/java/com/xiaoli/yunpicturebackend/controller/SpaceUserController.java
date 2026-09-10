@@ -1,12 +1,12 @@
 package com.xiaoli.yunpicturebackend.controller;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.xiaoli.yunpicturebackend.common.BaseResponse;
-import com.xiaoli.yunpicturebackend.common.DeleteRequest;
-import com.xiaoli.yunpicturebackend.common.ResultUtils;
-import com.xiaoli.yunpicturebackend.exception.BusinessException;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
+import com.xiaoli.yunpicture.infrastructure.common.DeleteRequest;
+import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
+import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import com.xiaoli.yunpicturebackend.manager.auth.annotation.SaSpaceCheckPermission;
 import com.xiaoli.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
 import com.xiaoli.yunpicturebackend.model.dto.spaceuser.SpaceUserAddRequest;

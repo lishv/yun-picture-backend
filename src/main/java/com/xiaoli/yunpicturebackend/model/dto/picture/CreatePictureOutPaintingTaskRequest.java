@@ -1,6 +1,6 @@
 package com.xiaoli.yunpicturebackend.model.dto.picture;
 
-import com.xiaoli.yunpicturebackend.api.aliyunai.model.CreateOutPaintingTaskRequest;
+import com.xiaoli.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskRequest;
 import lombok.Data;
 
 import java.io.Serializable;

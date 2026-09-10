@@ -1,5 +1,6 @@
 package com.xiaoli.yunpicturebackend.model.vo;
 
+import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import com.xiaoli.yunpicturebackend.model.entity.Space;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;

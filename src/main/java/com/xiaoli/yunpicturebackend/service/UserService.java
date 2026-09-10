@@ -1,14 +1,13 @@
 package com.xiaoli.yunpicturebackend.service;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.xiaoli.yunpicturebackend.model.dto.user.UserLoginRequest;
-import com.xiaoli.yunpicturebackend.model.dto.user.UserQueryRequest;
-import com.xiaoli.yunpicturebackend.model.dto.user.UserRegisterRequest;
+import com.xiaoli.yunpicture.interfaces.dto.user.UserLoginRequest;
+import com.xiaoli.yunpicture.interfaces.dto.user.UserQueryRequest;
+import com.xiaoli.yunpicture.interfaces.dto.user.UserRegisterRequest;
 import com.xiaoli.yunpicturebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.xiaoli.yunpicturebackend.model.vo.LoginUserVo;
-import com.xiaoli.yunpicturebackend.model.vo.UserVO;
+import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;

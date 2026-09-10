@@ -6,10 +6,11 @@ import cn.hutool.core.util.NumberUtil;
 import cn.hutool.core.util.RandomUtil;
 import com.qcloud.cos.model.PutObjectResult;
 import com.qcloud.cos.model.ciModel.persistence.ImageInfo;
-import com.xiaoli.yunpicturebackend.config.CosClientConfig;
-import com.xiaoli.yunpicturebackend.exception.BusinessException;
-import com.xiaoli.yunpicturebackend.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.api.CosManager;
+import com.xiaoli.yunpicture.infrastructure.config.CosClientConfig;
+import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import com.xiaoli.yunpicturebackend.model.dto.file.UploadPictureResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ public class FileManager {
     @Resource
     private CosClientConfig cosClientConfig;
     @Resource
-    private  CosManager cosManager;
+    private CosManager cosManager;
 public UploadPictureResult uploadPicture (MultipartFile multipartFile,String uploadPathPrefix) {
         //校验图片
         validPicture(multipartFile);

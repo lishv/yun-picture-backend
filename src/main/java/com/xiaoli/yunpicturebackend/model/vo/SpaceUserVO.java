@@ -1,6 +1,7 @@
 package com.xiaoli.yunpicturebackend.model.vo;
 
 import com.baomidou.mybatisplus.annotation.TableField;
+import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import com.xiaoli.yunpicturebackend.model.entity.SpaceUser;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
