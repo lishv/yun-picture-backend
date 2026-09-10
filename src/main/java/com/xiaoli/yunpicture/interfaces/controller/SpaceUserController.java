@@ -9,8 +9,8 @@ import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import com.xiaoli.yunpicture.interfaces.assembler.SpaceUserAssembler;
-import com.xiaoli.yunpicturebackend.manager.auth.annotation.SaSpaceCheckPermission;
-import com.xiaoli.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
+import com.xiaoli.yunpicture.shared.auth.annotation.SaSpaceCheckPermission;
+import com.xiaoli.yunpicture.shared.auth.model.SpaceUserPermissionConstant;
 import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserAddRequest;
 import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserEditRequest;
 import com.xiaoli.yunpicture.interfaces.dto.spaceuser.SpaceUserQueryRequest;
@@ -20,7 +20,6 @@ import com.xiaoli.yunpicture.interfaces.vo.space.SpaceUserVO;
 
 import com.xiaoli.yunpicture.application.service.UserApplicationService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;

@@ -12,14 +12,13 @@ import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
 import com.xiaoli.yunpicture.interfaces.assembler.SpaceAssembler;
-import com.xiaoli.yunpicturebackend.manager.auth.SpaceUserAuthManager;
+import com.xiaoli.yunpicture.shared.auth.SpaceUserAuthManager;
 import com.xiaoli.yunpicture.interfaces.dto.space.SpaceAddRequest;
 import com.xiaoli.yunpicture.interfaces.dto.space.SpaceLevel;
 import com.xiaoli.yunpicture.interfaces.dto.space.SpaceQueryRequest;
 import com.xiaoli.yunpicture.interfaces.dto.space.SpaceUpdateRequest;
 import com.xiaoli.yunpicture.domain.space.entity.Space;
 import com.xiaoli.yunpicture.domain.user.entity.User;
-import com.xiaoli.yunpicture.domain.space.valueobject.SpaceLevelEnum;
 import com.xiaoli.yunpicture.interfaces.vo.space.SpaceVO;
 import com.xiaoli.yunpicture.application.service.UserApplicationService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,10 +26,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Slf4j
 @RestController

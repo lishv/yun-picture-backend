@@ -57,7 +57,7 @@ spring:
             type: CLASS_BASED
             props:
               strategy: standard
-              algorithmClassName: com.xiaoli.yunpicturebackend.manager.sharding.PictureShardingAlgorithm
+              algorithmClassName: com.xiaoli.yunpicture.shared.sharding.PictureShardingAlgorithm
     props:
       sql-show: true
 
@@ -94,4 +94,4 @@ knife4j:
       default:
         api-rule: package
         api-rule-resources:
-          - com.xiaoli.yunpicturebackend.controller
+          - com.xiaoli.yunpicture.interfaces.controller

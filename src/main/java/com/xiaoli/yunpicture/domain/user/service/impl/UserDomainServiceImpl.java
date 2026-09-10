@@ -20,7 +20,7 @@ import com.xiaoli.yunpicture.interfaces.dto.user.UserLoginRequest;
 import com.xiaoli.yunpicture.interfaces.dto.user.UserQueryRequest;
 import com.xiaoli.yunpicture.interfaces.dto.user.UserRegisterRequest;
 import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
-import com.xiaoli.yunpicturebackend.manager.auth.StpKit;
+import com.xiaoli.yunpicture.shared.auth.StpKit;
 import com.xiaoli.yunpicture.interfaces.vo.user.LoginUserVo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
