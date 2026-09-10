@@ -3,7 +3,7 @@ package com.xiaoli.yunpicturebackend.manager.websocket.disruptor;
 import com.lmax.disruptor.RingBuffer;
 import com.lmax.disruptor.dsl.Disruptor;
 import com.xiaoli.yunpicturebackend.manager.websocket.model.PictureEditRequestMessage;
-import com.xiaoli.yunpicturebackend.model.entity.User;
+import com.xiaoli.yunpicture.domain.user.entity.User;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketSession;

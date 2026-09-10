@@ -162,7 +162,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.xiaoli.yunpicturebackend.YunPictureBackendApplication</mainClass>
+                    <mainClass>com.xiaoli.yunpicture.YunPictureBackendApplication</mainClass>
                     <skip>true</skip>
                 </configuration>
                 <executions>

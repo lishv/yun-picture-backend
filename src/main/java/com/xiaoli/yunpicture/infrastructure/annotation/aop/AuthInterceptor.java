@@ -3,9 +3,9 @@ package com.xiaoli.yunpicture.infrastructure.annotation.aop;
 import com.xiaoli.yunpicture.infrastructure.annotation.AuthCheck;
 import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
-import com.xiaoli.yunpicturebackend.model.entity.User;
+import com.xiaoli.yunpicture.domain.user.entity.User;
 import com.xiaoli.yunpicture.domain.user.valueobject.UserRoleEnum;
-import com.xiaoli.yunpicturebackend.service.UserService;
+import com.xiaoli.yunpicture.application.service.UserApplicationService;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 @Component
 public class AuthInterceptor {
     @Resource
-    private UserService userService;
+    private UserApplicationService userApplicationService;
 
     /**
      * 权限校验拦截器
@@ -38,7 +38,7 @@ public class AuthInterceptor {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         HttpServletRequest request = requestAttributes.getRequest();
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userApplicationService.getLoginUser(request);
         //要求当前请求角色
         UserRoleEnum roleEnum = UserRoleEnum.getEnumByValue(role);
         if (roleEnum == null) {

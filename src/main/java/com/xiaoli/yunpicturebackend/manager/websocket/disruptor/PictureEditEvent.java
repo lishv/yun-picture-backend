@@ -1,7 +1,7 @@
 package com.xiaoli.yunpicturebackend.manager.websocket.disruptor;
 
 import com.xiaoli.yunpicturebackend.manager.websocket.model.PictureEditRequestMessage;
-import com.xiaoli.yunpicturebackend.model.entity.User;
+import com.xiaoli.yunpicture.domain.user.entity.User;
 import lombok.Data;
 import org.springframework.web.socket.WebSocketSession;
 

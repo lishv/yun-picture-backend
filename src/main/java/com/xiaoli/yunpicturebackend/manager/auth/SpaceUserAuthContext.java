@@ -1,8 +1,8 @@
 package com.xiaoli.yunpicturebackend.manager.auth;
 
-import com.xiaoli.yunpicturebackend.model.entity.Picture;
-import com.xiaoli.yunpicturebackend.model.entity.Space;
-import com.xiaoli.yunpicturebackend.model.entity.SpaceUser;
+import com.xiaoli.yunpicture.domain.picture.entity.Picture;
+import com.xiaoli.yunpicture.domain.space.entity.Space;
+import com.xiaoli.yunpicture.domain.space.entity.SpaceUser;
 import lombok.Data;
 
 /**

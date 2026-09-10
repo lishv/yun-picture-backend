@@ -9,19 +9,18 @@ import cn.hutool.extra.servlet.ServletUtil;
 import cn.hutool.http.ContentType;
 import cn.hutool.http.Header;
 import cn.hutool.json.JSONUtil;
+import com.xiaoli.yunpicture.application.service.SpaceApplicationService;
+import com.xiaoli.yunpicture.application.service.SpaceUserApplicationService;
 import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicturebackend.manager.auth.model.SpaceUserPermissionConstant;
-import com.xiaoli.yunpicturebackend.model.entity.Picture;
-import com.xiaoli.yunpicturebackend.model.entity.Space;
-import com.xiaoli.yunpicturebackend.model.entity.SpaceUser;
-import com.xiaoli.yunpicturebackend.model.entity.User;
-import com.xiaoli.yunpicturebackend.model.enums.SpaceRoleEnum;
-import com.xiaoli.yunpicturebackend.model.enums.SpaceTypeEnum;
-import com.xiaoli.yunpicturebackend.service.PictureService;
-import com.xiaoli.yunpicturebackend.service.SpaceService;
-import com.xiaoli.yunpicturebackend.service.SpaceUserService;
-import com.xiaoli.yunpicturebackend.service.UserService;
+import com.xiaoli.yunpicture.domain.picture.entity.Picture;
+import com.xiaoli.yunpicture.domain.space.entity.Space;
+import com.xiaoli.yunpicture.domain.space.entity.SpaceUser;
+import com.xiaoli.yunpicture.domain.user.entity.User;
+import com.xiaoli.yunpicture.domain.space.valueobject.SpaceRoleEnum;
+import com.xiaoli.yunpicture.domain.space.valueobject.SpaceTypeEnum;
+import com.xiaoli.yunpicture.application.service.PictureApplicationService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -41,15 +40,14 @@ public class StpInterfaceImpl implements StpInterface {
     @Value("${server.servlet.context-path}")
     private String contextPath;
     @Resource
-    private SpaceUserService spaceUserService;
+    private SpaceUserApplicationService spaceUserApplicationService;
     @Resource
     private SpaceUserAuthManager spaceUserAuthManager;
+
     @Resource
-    private UserService userService;
+    private PictureApplicationService pictureApplicationService;
     @Resource
-    private PictureService pictureService;
-    @Resource
-    private SpaceService spaceService;
+    private SpaceApplicationService spaceApplicationService;
 
     /**
      * 返回一个账号所拥有的权限码集合
@@ -85,12 +83,12 @@ public class StpInterfaceImpl implements StpInterface {
         // 如果有 spaceUserId，必然是团队空间，通过数据库查询 SpaceUser 对象
         Long spaceUserId = authContext.getSpaceUserId();
         if (spaceUserId != null) {
-            spaceUser = spaceUserService.getById(spaceUserId);
+            spaceUser = spaceUserApplicationService.getById(spaceUserId);
             if (spaceUser == null) {
                 throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到空间用户信息");
             }
             // 取出当前登录用户对应的 spaceUser
-            SpaceUser loginSpaceUser = spaceUserService.lambdaQuery()
+            SpaceUser loginSpaceUser = spaceUserApplicationService.lambdaQuery()
                     .eq(SpaceUser::getSpaceId, spaceUser.getSpaceId())
                     .eq(SpaceUser::getUserId, userId)
                     .one();
@@ -109,7 +107,7 @@ public class StpInterfaceImpl implements StpInterface {
             if (pictureId == null) {
                 return ADMIN_PERMISSIONS;
             }
-            Picture picture = pictureService.lambdaQuery()
+            Picture picture = pictureApplicationService.lambdaQuery()
                     .eq(Picture::getId, pictureId)
                     .select(Picture::getId, Picture::getSpaceId, Picture::getUserId)
                     .one();
@@ -119,7 +117,7 @@ public class StpInterfaceImpl implements StpInterface {
             spaceId = picture.getSpaceId();
             // 公共图库，仅本人或管理员可操作
             if (spaceId == null) {
-                if (picture.getUserId().equals(userId) || userService.isAdmin(loginUser)) {
+                if (picture.getUserId().equals(userId) || loginUser.isAdmin()) {
                     return ADMIN_PERMISSIONS;
                 } else {
                     // 不是自己的图片，仅可查看
@@ -128,21 +126,21 @@ public class StpInterfaceImpl implements StpInterface {
             }
         }
         // 获取 Space 对象
-        Space space = spaceService.getById(spaceId);
+        Space space = spaceApplicationService.getById(spaceId);
         if (space == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "未找到空间信息");
         }
         // 根据 Space 类型判断权限
         if (space.getSpaceType() == SpaceTypeEnum.PRIVATE.getValue()) {
             // 私有空间，仅本人或管理员有权限
-            if (space.getUserId().equals(userId) || userService.isAdmin(loginUser)) {
+            if (space.getUserId().equals(userId) || loginUser.isAdmin()) {
                 return ADMIN_PERMISSIONS;
             } else {
                 return new ArrayList<>();
             }
         } else {
             // 团队空间，查询 SpaceUser 并获取角色和权限
-            spaceUser = spaceUserService.lambdaQuery()
+            spaceUser = spaceUserApplicationService.lambdaQuery()
                     .eq(SpaceUser::getSpaceId, spaceId)
                     .eq(SpaceUser::getUserId, userId)
                     .one();

@@ -4,7 +4,7 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaoli.yunpicture.infrastructure.mapper.SpaceUserMapper">
 
-    <resultMap id="BaseResultMap" type="com.xiaoli.yunpicturebackend.model.entity.SpaceUser">
+    <resultMap id="BaseResultMap" type="com.xiaoli.yunpicture.domain.space.entity.SpaceUser">
             <id property="id" column="id" />
             <result property="spaceId" column="spaceId" />
             <result property="userId" column="userId" />
