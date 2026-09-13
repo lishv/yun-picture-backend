@@ -33,3 +33,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+####yaml###
+application-prod.yml
+application-local.yml

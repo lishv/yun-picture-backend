@@ -2,14 +2,14 @@ server:
   port: 8123
   servlet:
     context-path: /api
-    # cookie 30 天过期
+  # cookie 30 天过期
     session:
       cookie:
         max-age: 2592000
 
 spring:
   application:
-    name: yun-picture-backend
+    name: yun-picture-backend-ddd
   #数据库配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -82,10 +82,10 @@ knife4j:
   enable: true
   openapi:
     title: 接口文档
-    description: "智能协同云图库接口文档"
-    email: xiaoli@foxmail.com
+    description: "绘灵云图片协作平台接口文档"
+    email: 13866867523@126.com
     concat: xiaoli
-    url: https://docs.xiaoli.com
+    url: https://github.com/lishv
     version: 1.0
     license: Apache 2.0
     license-url: https://stackoverflow.com/
