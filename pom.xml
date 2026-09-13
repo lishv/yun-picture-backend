@@ -169,7 +169,7 @@
                 <version>${spring-boot.version}</version>
                 <configuration>
                     <mainClass>com.xiaoli.yunpicture.YunPictureBackendApplication</mainClass>
-                    <skip>true</skip>
+<!--                    <skip>true</skip>-->
                 </configuration>
                 <executions>
                     <execution>
