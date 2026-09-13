@@ -3,6 +3,7 @@ package com.xiaoli.yunpicture.domain.user.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -16,6 +17,7 @@ import com.xiaoli.yunpicture.domain.user.valueobject.UserRoleEnum;
 import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.manager.email.EmailManager;
 import com.xiaoli.yunpicture.interfaces.dto.user.*;
 import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import com.xiaoli.yunpicture.shared.auth.StpKit;
@@ -40,7 +42,9 @@ import java.util.UUID;
 public class UserDomainServiceImpl implements UserDomainService {
     @Resource
     private UserRepository userRepository;
-    
+    @Resource
+    private EmailManager emailManager;
+
     /**
      * 用户注册
      * @param userRegisterRequest   用户注册请求体
@@ -217,12 +221,14 @@ public class UserDomainServiceImpl implements UserDomainService {
 
 //        Integer current = userQueryRequest.getCurrent();
 //        Integer pageSize = userQueryRequest.getPageSize();
+        String email = userQueryRequest.getEmail();
         queryWrapper
                 .eq(ObjectUtil.isNotNull(id), "id", id)
                 .like(StrUtil.isNotBlank(userName), "userName", userName)
                 .like(StrUtil.isNotBlank(userAccount), "userAccount", userAccount)
                 .like(StrUtil.isNotBlank(userProfile), "userProfile", userProfile)
                 .eq(StrUtil.isNotBlank(userRole), "userRole", userRole)
+                .like(StrUtil.isNotBlank(email), "email", email)
                 .orderBy(StrUtil.isNotBlank(sortField) && StrUtil.isNotBlank(sortOrder), "ascend".equals(sortOrder), sortField);
 
         return queryWrapper;
@@ -311,7 +317,129 @@ public class UserDomainServiceImpl implements UserDomainService {
         User latestUser = this.getById(loginUser.getId());
         request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, latestUser);
     }
+    /**
+     * 发送邮箱验证码
+     */
+    @Override
+    public boolean sendEmailCode(UserSendEmailCodeRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        String email = request.getEmail();
+        String biz = request.getBiz();
+        ThrowUtils.throwIf(StrUtil.isBlank(email) || StrUtil.isBlank(biz), ErrorCode.PARAMS_ERROR, "参数不能为空");
 
+        // 注册场景：校验邮箱是否已被占用
+        if ("register".equals(biz)) {
+            LambdaQueryWrapper<User> query = new LambdaQueryWrapper<>();
+            query.eq(User::getEmail, email);
+            long count = userRepository.getBaseMapper().selectCount(query);
+            ThrowUtils.throwIf(count > 0, ErrorCode.PARAMS_ERROR, "该邮箱已被注册绑定");
+        } else if ("reset_password".equals(biz)) {
+            // 找回密码场景：校验邮箱是否存在
+            LambdaQueryWrapper<User> query = new LambdaQueryWrapper<>();
+            query.eq(User::getEmail, email);
+            User user = userRepository.getBaseMapper().selectOne(query);
+            ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+        } else {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
+        emailManager.sendVerificationCode(email, biz);
+        return true;
+    }
+
+    /**
+     * 邮箱验证码注册
+     */
+    @Override
+    public long userEmailRegister(UserEmailRegisterRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = request.getUserAccount();
+        String email = request.getEmail();
+        String code = request.getCode();
+        String userPassword = request.getUserPassword();
+        String checkPassword = request.getCheckPassword();
+
+        if (StrUtil.hasBlank(userAccount, email, code, userPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (userAccount.length() < 3) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号长度不能小于3位");
+        }
+        if (userPassword.length() < 8 || checkPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度不能小于8位");
+        }
+        if (!userPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入密码不一致");
+        }
+
+        // 1. 校验验证码
+        emailManager.verifyCode(email, "register", code);
+
+        // 2. 校验账号是否已存在
+        LambdaQueryWrapper<User> accountQuery = new LambdaQueryWrapper<>();
+        accountQuery.eq(User::getUserAccount, userAccount);
+        ThrowUtils.throwIf(userRepository.getBaseMapper().selectCount(accountQuery) > 0, ErrorCode.PARAMS_ERROR, "用户账号已存在");
+
+        // 3. 校验邮箱是否已存在
+        LambdaQueryWrapper<User> emailQuery = new LambdaQueryWrapper<>();
+        emailQuery.eq(User::getEmail, email);
+        ThrowUtils.throwIf(userRepository.getBaseMapper().selectCount(emailQuery) > 0, ErrorCode.PARAMS_ERROR, "该邮箱已被绑定");
+
+        // 4. 插入新用户
+        String encryptPassword = getEncryptPassword(userPassword);
+        User user = new User();
+        user.setUserAccount(userAccount);
+        user.setEmail(email);
+        user.setUserPassword(encryptPassword);
+        user.setUserName("用户_" + RandomUtil.randomString(6));
+        user.setUserRole(UserRoleEnum.User.getValue());
+        boolean result = userRepository.saveOrUpdate(user);
+        ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "注册失败");
+
+        // 5. 消费清除 Redis 验证码
+        emailManager.deleteCode(email, "register");
+        return user.getId();
+    }
+
+    /**
+     * 邮箱验证码重置密码
+     */
+    @Override
+    public boolean userEmailResetPassword(UserEmailResetPasswordRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        String email = request.getEmail();
+        String code = request.getCode();
+        String newPassword = request.getNewPassword();
+        String checkPassword = request.getCheckPassword();
+
+        if (StrUtil.hasBlank(email, code, newPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (newPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码长度不能小于8位");
+        }
+        if (!newPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入密码不一致");
+        }
+
+        // 1. 校验验证码
+        emailManager.verifyCode(email, "reset_password", code);
+
+        // 2. 查出对应用户
+        LambdaQueryWrapper<User> query = new LambdaQueryWrapper<>();
+        query.eq(User::getEmail, email);
+        User user = userRepository.getBaseMapper().selectOne(query);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR);
+
+        // 3. 更新密码
+        user.setUserPassword(getEncryptPassword(newPassword));
+        boolean result = this.updateById(user);
+        ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "更新密码失败");
+
+        // 4. 清除 Redis 验证码
+        emailManager.deleteCode(email, "reset_password");
+        return true;
+    }
 
     @Override
     public Boolean removeById(Long id) {

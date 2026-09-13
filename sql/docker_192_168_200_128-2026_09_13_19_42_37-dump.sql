@@ -184,3 +184,10 @@ UNLOCK TABLES;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
 -- Dump completed on 2026-09-13 19:42:38
+-- 1. 为 user 表增加 email 字段（允许 NULL，以便兼容历史老用户）
+ALTER TABLE `user`
+    ADD COLUMN `email` VARCHAR(256) NULL COMMENT '用户邮箱' AFTER `userProfile`;
+
+-- 2. 为 email 字段建立唯一索引（在 MySQL 中，多行 NULL 不冲突，有邮箱值时强制全局唯一）
+ALTER TABLE `user`
+    ADD UNIQUE INDEX `uk_email` (`email`);

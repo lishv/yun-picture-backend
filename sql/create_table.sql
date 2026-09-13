@@ -118,3 +118,11 @@ create table if not exists space_user
     INDEX idx_spaceId (spaceId),                    -- 提升按空间查询的性能
     INDEX idx_userId (userId)                       -- 提升按用户查询的性能
 ) comment '空间用户关联' collate = utf8mb4_unicode_ci;
+-- 1. 为 user 表增加 email 字段（允许 NULL，以便兼容历史老用户）
+
+ALTER TABLE `user`
+    ADD COLUMN `email` VARCHAR(256) NULL COMMENT '用户邮箱' AFTER `userProfile`;
+
+-- 2. 为 email 字段建立唯一索引（在 MySQL 中，多行 NULL 不冲突，有邮箱值时强制全局唯一）
+ALTER TABLE `user`
+    ADD UNIQUE INDEX `uk_email` (`email`);

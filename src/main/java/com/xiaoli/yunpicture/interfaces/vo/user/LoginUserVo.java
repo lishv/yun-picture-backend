@@ -52,6 +52,10 @@ public class LoginUserVo  implements Serializable {
      * 更新时间
      */
     private Date updateTime;
+    /**
+     * 邮箱
+     */
+    private String email;
 
 
 }

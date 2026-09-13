@@ -7,6 +7,7 @@ import com.xiaoli.yunpicture.interfaces.dto.user.*;
 import com.xiaoli.yunpicture.domain.user.entity.User;
 import com.xiaoli.yunpicture.interfaces.vo.user.LoginUserVo;
 import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -94,6 +95,35 @@ public interface UserApplicationService {
      * @return 是否重置成功
      */
     boolean resetPassword(Long userId);
+    /**
+     * 用户自己修改用户信息
+     * @param userEditRequest 用户编辑请求体
+     * @param request         HTTP请求对象
+     */
+    void editUser(UserEditRequest userEditRequest, HttpServletRequest request);
+    /**
+     * 发送邮箱验证码
+     */
+    boolean sendEmailCode(UserSendEmailCodeRequest request);
+
+    /**
+     * 邮箱验证码注册
+     */
+    long userEmailRegister(UserEmailRegisterRequest request);
+
+    /**
+     * 邮箱验证码重置密码
+     */
+    boolean userEmailResetPassword(UserEmailResetPasswordRequest request);
+    /**
+     * 上传用户头像到 COS 专属 avatar/ 目录
+     *
+     * @param multipartFile 头像文件
+     * @param loginUser     当前登录用户
+     * @return 头像在 COS 的访问 URL
+     */
+    String uploadAvatar(MultipartFile multipartFile, User loginUser);
+
 
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
 
@@ -111,10 +141,5 @@ public interface UserApplicationService {
 
     long saveUser(User userEntity);
 
-    /**
-     * 用户自己修改用户信息
-     * @param userEditRequest
-     * @param request
-     */
-    void editUser(UserEditRequest userEditRequest, HttpServletRequest request);
+
 }

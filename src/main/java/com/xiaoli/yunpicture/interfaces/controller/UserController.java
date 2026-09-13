@@ -16,6 +16,7 @@ import com.xiaoli.yunpicture.interfaces.vo.user.LoginUserVo;
 import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import com.xiaoli.yunpicture.application.service.UserApplicationService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -197,6 +198,47 @@ public class UserController {
         boolean result = userApplicationService.resetPassword(userResetPasswordRequest.getId());
         return ResultUtils.success(result);
     }
+    /**
+     * 发送邮箱验证码
+     */
+    @PostMapping("/code/send")
+    public BaseResponse<Boolean> sendEmailCode(@RequestBody UserSendEmailCodeRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(userApplicationService.sendEmailCode(request));
+    }
+
+    /**
+     * 邮箱验证码注册
+     */
+    @PostMapping("/register/email")
+    public BaseResponse<Long> registerByEmail(@RequestBody UserEmailRegisterRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(userApplicationService.userEmailRegister(request));
+    }
+
+    /**
+     * 邮箱验证码重置密码（忘记密码）
+     */
+    @PostMapping("/reset/password/email")
+    public BaseResponse<Boolean> resetPasswordByEmail(@RequestBody UserEmailResetPasswordRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(userApplicationService.userEmailResetPassword(request));
+    }
+    /**
+     * 用户专属头像上传接口
+     *
+     * @param multipartFile 本地头像文件
+     * @param request       HTTP 请求
+     * @return 头像访问 URL
+     */
+    @PostMapping("/upload/avatar")
+    public BaseResponse<String> uploadAvatar(@RequestPart("file") MultipartFile multipartFile, HttpServletRequest request) {
+        ThrowUtils.throwIf(multipartFile == null, ErrorCode.PARAMS_ERROR, "上传文件不能为空");
+        User loginUser = userApplicationService.getLoginUser(request);
+        String avatarUrl = userApplicationService.uploadAvatar(multipartFile, loginUser);
+        return ResultUtils.success(avatarUrl);
+    }
+
 
 
 }

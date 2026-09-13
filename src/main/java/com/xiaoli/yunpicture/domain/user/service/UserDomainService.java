@@ -94,6 +94,12 @@ public interface UserDomainService {
      */
     boolean resetPassword(Long userId);
 
+    boolean sendEmailCode(UserSendEmailCodeRequest request);
+
+    long userEmailRegister(UserEmailRegisterRequest request);
+
+    boolean userEmailResetPassword(UserEmailResetPasswordRequest request);
+
     Boolean removeById(Long id);
 
     boolean updateById(User user);

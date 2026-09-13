@@ -1,0 +1,129 @@
+package com.xiaoli.yunpicture.infrastructure.manager.email;
+
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.StrUtil;
+
+import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
+import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.stereotype.Component;
+
+import javax.annotation.Resource;
+import javax.mail.internet.MimeMessage;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * 邮件发送与 Redis 验证码管理器
+ */
+@Slf4j
+@Component
+public class EmailManager {
+
+    @Resource
+    private JavaMailSender mailSender;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    @Value("${spring.mail.username:}")
+    private String fromEmail;
+
+    // 验证码 Redis 前缀
+    private static final String CODE_KEY_PREFIX = "user:code:";
+    // 防刷限流 Redis 前缀（60秒冷却）
+    private static final String COOLDOWN_KEY_PREFIX = "user:code:cooldown:";
+
+    /**
+     * 发送邮箱验证码并存入 Redis
+     *
+     * @param toEmail 目标邮箱
+     * @param biz     业务场景 (register / reset_password)
+     */
+    public void sendVerificationCode(String toEmail, String biz) {
+        if (StrUtil.isBlank(toEmail) || StrUtil.isBlank(biz)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (StrUtil.isBlank(fromEmail)) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+
+        // 1. 检查 60 秒发送冷却
+        String cooldownKey = COOLDOWN_KEY_PREFIX + biz + ":" + toEmail;
+        Boolean hasCooldown = stringRedisTemplate.hasKey(cooldownKey);
+        if (Boolean.TRUE.equals(hasCooldown)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码发送过于频繁，请稍后再试");
+        }
+
+        // 2. 生成 6 位随机数字验证码
+        String code = RandomUtil.randomNumbers(6);
+
+        // 3. 构建邮件内容并发送
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(fromEmail, "绘灵云图片协作平台");// 发件名称
+            helper.setTo(toEmail);
+
+            String title = "register".equals(biz) ? "注册验证码" : "找回密码验证码";
+            helper.setSubject("【绘灵云图片协作平台】" + title);
+
+            String htmlContent = "<div style='font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 8px;'>"
+                    + "<h2 style='color: #1890ff; margin-bottom: 16px;'>绘灵云图片协作平台</h2>"
+                    + "<p style='font-size: 15px; color: #333;'>您好！您正在进行<strong>" + title + "</strong>操作，您的验证码为：</p>"
+                    + "<div style='background: #f4f6f9; padding: 16px; text-align: center; border-radius: 6px; margin: 20px 0;'>"
+                    + "<span style='font-size: 30px; font-weight: bold; letter-spacing: 6px; color: #1890ff;'>" + code + "</span>"
+                    + "</div>"
+                    + "<p style='font-size: 13px; color: #888;'>验证码有效期为 <strong>5 分钟</strong>。若非本人操作，请忽略此邮件。</p>"
+                    + "<hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'/>"
+                    + "<p style='font-size: 12px; color: #bbb; text-align: center;'>此邮件由系统自动发送，请勿直接回复</p>"
+                    + "</div>";
+
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+            log.info("邮件验证码已成功发送至: {}, 场景: {}", toEmail, biz);
+        } catch (Exception e) {
+            log.error("邮件发送异常: ", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
+
+        // 4. 将验证码保存至 Redis，5 分钟有效
+        String codeKey = CODE_KEY_PREFIX + biz + ":" + toEmail;
+        stringRedisTemplate.opsForValue().set(codeKey, code, 5, TimeUnit.MINUTES);
+
+        // 5. 设置 60 秒冷却防刷
+        stringRedisTemplate.opsForValue().set(cooldownKey, "1", 60, TimeUnit.SECONDS);
+    }
+
+    /**
+     * 校验验证码是否正确
+     *
+     * @param toEmail 邮箱
+     * @param biz     业务场景
+     * @param code    用户输入的验证码
+     */
+    public void verifyCode(String toEmail, String biz, String code) {
+        if (StrUtil.hasBlank(toEmail, biz, code)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String codeKey = CODE_KEY_PREFIX + biz + ":" + toEmail;
+        String cachedCode = stringRedisTemplate.opsForValue().get(codeKey);
+        if (StrUtil.isBlank(cachedCode)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (!cachedCode.equals(code.trim())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
+        }
+    }
+
+    /**
+     * 消费/清除已验证的验证码（防止二次利用）
+     */
+    public void deleteCode(String toEmail, String biz) {
+        String codeKey = CODE_KEY_PREFIX + biz + ":" + toEmail;
+        stringRedisTemplate.delete(codeKey);
+    }
+}
