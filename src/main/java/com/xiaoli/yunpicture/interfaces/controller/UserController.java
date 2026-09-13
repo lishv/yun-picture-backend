@@ -153,7 +153,50 @@ public class UserController {
       }
         return ResultUtils.success(userApplicationService.userLoginOut(request));
     }
+    /**
+     * 用户自己修改密码
+     *
+     * @param userChangePasswordRequest 修改密码请求
+     * @param request HTTP 请求
+     * @return 修改结果
+     */
+    @PostMapping("/change/password")
+    public BaseResponse<Boolean> changePassword(@RequestBody UserChangePasswordRequest userChangePasswordRequest,
+                                                HttpServletRequest request) {
+        ThrowUtils.throwIf(userChangePasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userApplicationService.getLoginUser(request);
+        boolean result = userApplicationService.changePassword(userChangePasswordRequest, loginUser);
+        return ResultUtils.success(result);
+    }
 
+    /**
+     * 用户修改个人信息（包括修改头像、昵称、简介）
+     *
+     * @param userEditRequest 编辑请求参数
+     * @param request HTTP 请求
+     * @return 修改结果
+     */
+    @PostMapping("/edit")
+    public BaseResponse<Boolean> editUser(@RequestBody UserEditRequest userEditRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(userEditRequest == null, ErrorCode.PARAMS_ERROR);
+       userApplicationService.editUser(userEditRequest,request);
+
+        return ResultUtils.success(true);
+    }
+
+    /**
+     * 重置用户密码 (仅管理员)
+     *
+     * @param userResetPasswordRequest 重置密码请求参数
+     * @return 重置结果
+     */
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @PostMapping("/reset/password")
+    public BaseResponse<Boolean> resetUserPassword(@RequestBody UserResetPasswordRequest userResetPasswordRequest) {
+        ThrowUtils.throwIf(userResetPasswordRequest == null || userResetPasswordRequest.getId() == null, ErrorCode.PARAMS_ERROR);
+        boolean result = userApplicationService.resetPassword(userResetPasswordRequest.getId());
+        return ResultUtils.success(result);
+    }
 
 
 }

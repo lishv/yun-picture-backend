@@ -3,9 +3,7 @@ package com.xiaoli.yunpicture.domain.user.service;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaoli.yunpicture.domain.user.entity.User;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserLoginRequest;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserQueryRequest;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserRegisterRequest;
+import com.xiaoli.yunpicture.interfaces.dto.user.*;
 import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import com.xiaoli.yunpicture.interfaces.vo.user.LoginUserVo;
 
@@ -81,6 +79,21 @@ public interface UserDomainService {
      */
     QueryWrapper<User> getQueryWrapper(UserQueryRequest userQueryRequest);
 
+    /**
+     * 用户修改密码
+     * @param userChangePasswordRequest     用户修改密码请求体
+     * @param loginUser                     登录用户信息
+     * @return                                是否修改成功
+     */
+    boolean changePassword(UserChangePasswordRequest userChangePasswordRequest, User loginUser);
+
+    /**
+     * 用户重置密码
+     * @param userId 用户id
+     * @return 是否重置成功
+     */
+    boolean resetPassword(Long userId);
+
     Boolean removeById(Long id);
 
     boolean updateById(User user);
@@ -93,4 +106,10 @@ public interface UserDomainService {
 
     boolean saveUser(User userEntity);
 
+    /**
+     * 用户编辑自己信息
+     * @param userEditRequest 用户编辑请求体
+     * @param request         HTTP请求对象
+     */
+    void editUser(UserEditRequest userEditRequest, HttpServletRequest request);
 }

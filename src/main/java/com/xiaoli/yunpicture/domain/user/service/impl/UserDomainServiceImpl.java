@@ -16,9 +16,7 @@ import com.xiaoli.yunpicture.domain.user.valueobject.UserRoleEnum;
 import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserLoginRequest;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserQueryRequest;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserRegisterRequest;
+import com.xiaoli.yunpicture.interfaces.dto.user.*;
 import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
 import com.xiaoli.yunpicture.shared.auth.StpKit;
 import com.xiaoli.yunpicture.interfaces.vo.user.LoginUserVo;
@@ -230,6 +228,91 @@ public class UserDomainServiceImpl implements UserDomainService {
         return queryWrapper;
     }
 
+    /**
+     * 用户修改密码
+     * @param userChangePasswordRequest     用户修改密码请求体
+     * @param loginUser                     登录用户信息
+     * @return                                是否修改成功
+     */
+    @Override
+    public boolean changePassword(UserChangePasswordRequest userChangePasswordRequest, User loginUser) {
+        ThrowUtils.throwIf(userChangePasswordRequest == null, ErrorCode.PARAMS_ERROR);
+        String oldPassword = userChangePasswordRequest.getOldPassword();
+        String newPassword = userChangePasswordRequest.getNewPassword();
+        String checkPassword = userChangePasswordRequest.getCheckPassword();
+
+        // 1. 基础校验
+        if (StrUtil.hasBlank(oldPassword, newPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
+        }
+        if (newPassword.length() < 8 || oldPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度不能少于 8 位");
+        }
+        if (!newPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        }
+        if (oldPassword.equals(newPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码不能与原密码相同");
+        }
+
+        // 2. 校验原密码是否正确
+        String encryptOldPassword = getEncryptPassword(oldPassword);
+        User dbUser = this.getById(loginUser.getId());
+        ThrowUtils.throwIf(dbUser == null, ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        if (!encryptOldPassword.equals(dbUser.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "原密码错误");
+        }
+
+        // 3. 更新新密码
+        String encryptNewPassword = getEncryptPassword(newPassword);
+        User updateUser = new User();
+        updateUser.setId(dbUser.getId());
+        updateUser.setUserPassword(encryptNewPassword);
+        boolean result = this.updateById(updateUser);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "修改密码失败");
+        return true;
+    }
+
+    /**
+     * 重置用户密码
+     * @param userId 用户ID
+     * @return 是否重置成功
+     */
+    @Override
+    public boolean resetPassword(Long userId) {
+        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR);
+        User user = this.getById(userId);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+
+        // 重置为系统默认密码 12345678
+        String encryptDefaultPassword = getEncryptPassword(UserConstant.DEFAULT_PASSWORD);
+        User updateUser = new User();
+        updateUser.setId(user.getId());
+        updateUser.setUserPassword(encryptDefaultPassword);
+        boolean result = this.updateById(updateUser);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "重置密码失败");
+        return true;
+    }
+    /**
+     * 用户编辑自己信息
+     * @param userEditRequest 用户编辑请求体
+     * @param request         HTTP请求对象
+     */
+    @Override
+    public void editUser(UserEditRequest userEditRequest, HttpServletRequest request) {
+        User loginUser = this.getLoginUser(request);
+        User user = new User();
+        user.setId(loginUser.getId());
+        user.setUserName(userEditRequest.getUserName());
+        user.setUserAvatar(userEditRequest.getUserAvatar());
+        user.setUserProfile(userEditRequest.getUserProfile());
+        this.updateById(user);
+        // 实时更新 Session 中的登录用户信息，防止下一次读取旧数据
+        User latestUser = this.getById(loginUser.getId());
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, latestUser);
+    }
+
+
     @Override
     public Boolean removeById(Long id) {
         return userRepository.removeById(id);
@@ -259,6 +342,7 @@ public class UserDomainServiceImpl implements UserDomainService {
     public boolean saveUser(User userEntity) {
         return userRepository.save(userEntity);
     }
+
 
 
 }

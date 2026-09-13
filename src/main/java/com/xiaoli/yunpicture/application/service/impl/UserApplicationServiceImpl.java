@@ -1,5 +1,6 @@
 package com.xiaoli.yunpicture.application.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.xiaoli.yunpicture.domain.user.constant.UserConstant;
@@ -8,9 +9,7 @@ import com.xiaoli.yunpicture.infrastructure.common.DeleteRequest;
 import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserLoginRequest;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserQueryRequest;
-import com.xiaoli.yunpicture.interfaces.dto.user.UserRegisterRequest;
+import com.xiaoli.yunpicture.interfaces.dto.user.*;
 import com.xiaoli.yunpicture.domain.user.entity.User;
 import com.xiaoli.yunpicture.interfaces.vo.user.LoginUserVo;
 import com.xiaoli.yunpicture.interfaces.vo.user.UserVO;
@@ -137,6 +136,18 @@ public class UserApplicationServiceImpl
     }
 
     @Override
+    public boolean changePassword(UserChangePasswordRequest userChangePasswordRequest, User loginUser) {
+       return userDomainService.changePassword(userChangePasswordRequest, loginUser);
+
+    }
+
+    @Override
+    public boolean resetPassword(Long userId) {
+        return userDomainService.resetPassword(userId);
+    }
+
+
+    @Override
     public User getUserById(long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         User user = userDomainService.getById(id);
@@ -189,6 +200,16 @@ public class UserApplicationServiceImpl
         boolean result = userDomainService.saveUser(userEntity);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return userEntity.getId();
+    }
+
+    /**
+     * 用户自己修改用户信息
+     * @param userEditRequest
+     * @param request
+     */
+    @Override
+    public void editUser(UserEditRequest userEditRequest, HttpServletRequest request) {
+       userDomainService.editUser(userEditRequest,request);
     }
 
 }
