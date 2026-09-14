@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.xiaoli.yunpicture.application.service.SpaceApplicationService;
+import com.xiaoli.yunpicture.domain.space.valueobject.SpaceTypeEnum;
 import com.xiaoli.yunpicture.infrastructure.annotation.AuthCheck;
 import com.xiaoli.yunpicture.infrastructure.api.aliyunai.AliYunAiApi;
 import com.xiaoli.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskResponse;
@@ -35,6 +36,7 @@ import com.xiaoli.yunpicture.interfaces.vo.picture.PictureTagCategory;
 import com.xiaoli.yunpicture.interfaces.vo.picture.PictureVO;
 import com.xiaoli.yunpicture.application.service.PictureApplicationService;
 import com.xiaoli.yunpicture.application.service.UserApplicationService;
+import com.xiaoli.yunpicture.shared.websocket.PictureEditHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -62,7 +64,8 @@ public class PictureController {
     private SpaceApplicationService spaceApplicationService;
     @Resource
     private SpaceUserAuthManager spaceUserAuthManager;
-
+    @Resource
+    private PictureEditHandler pictureEditHandler;
     /**
      * 本地缓存
      */
@@ -81,10 +84,7 @@ public class PictureController {
     @PostMapping("/upload")
     @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_UPLOAD)
    // @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
-    public BaseResponse<PictureVO> uploadPicture(
-            @RequestPart("file") MultipartFile multipartFile,
-            PictureUploadRequest pictureUploadRequest,
-            HttpServletRequest request) {
+    public BaseResponse<PictureVO> uploadPicture(@RequestPart("file") MultipartFile multipartFile, PictureUploadRequest pictureUploadRequest, HttpServletRequest request) {
         User loginUser = userApplicationService.getLoginUser(request);
         PictureVO pictureVO = pictureApplicationService.uploadPicture(multipartFile, pictureUploadRequest, loginUser);
         return ResultUtils.success(pictureVO);

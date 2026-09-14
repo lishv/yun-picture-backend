@@ -215,6 +215,31 @@ public class PictureEditHandler extends TextWebSocketHandler {
             broadcastToPicture(pictureId, pictureEditResponseMessage);
         }
     }
+    /**
+     * 广播图片编辑已完成并保存
+     *
+     * @param pictureId 图片 ID
+     * @param user      操作保存的用户
+     */
+    public void notifyPictureEditComplete(Long pictureId, User user) {
+        // 移除正在编辑状态与历史操作
+        pictureEditingUsers.remove(pictureId);
+        pictureEditActions.remove(pictureId);
+
+        Set<WebSocketSession> sessionSet = pictureSessions.get(pictureId);
+        if (CollUtil.isNotEmpty(sessionSet)) {
+            PictureEditResponseMessage responseMessage = new PictureEditResponseMessage();
+            responseMessage.setType(PictureEditMessageTypeEnum.COMPLETE_EDIT.getValue());
+            responseMessage.setMessage(String.format("%s已保存并完成编辑", user.getUserName()));
+            responseMessage.setUser(userApplicationService.getUserVO(user));
+            try {
+                broadcastToPicture(pictureId, responseMessage);
+            } catch (Exception e) {
+                log.error("广播图片编辑完成通知异常, pictureId: {}", pictureId, e);
+            }
+        }
+    }
+
 
 
     /**

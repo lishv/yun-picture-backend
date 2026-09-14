@@ -10,9 +10,12 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.xiaoli.yunpicture.application.service.PictureApplicationService;
+import com.xiaoli.yunpicture.application.service.SpaceApplicationService;
 import com.xiaoli.yunpicture.application.service.UserApplicationService;
 import com.xiaoli.yunpicture.domain.picture.service.PictureDomainService;
 
+import com.xiaoli.yunpicture.domain.space.entity.Space;
+import com.xiaoli.yunpicture.domain.space.valueobject.SpaceTypeEnum;
 import com.xiaoli.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskResponse;
 import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
 
@@ -32,6 +35,7 @@ import com.xiaoli.yunpicture.interfaces.vo.picture.PictureVO;
 
 import com.xiaoli.yunpicture.infrastructure.mapper.PictureMapper;
 
+import com.xiaoli.yunpicture.shared.websocket.PictureEditHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.scheduling.annotation.Async;
@@ -52,12 +56,14 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Picture> implements PictureApplicationService {
-
-    private TransactionTemplate transactionTemplate;
     @Resource
     private UserApplicationService userApplicationService;
     @Resource
     private PictureDomainService pictureDomainService;
+    @Resource
+    private SpaceApplicationService spaceApplicationService;
+    @Resource
+    private PictureEditHandler pictureEditHandler;
 
     /**
      * 上传图片/更新图片
@@ -69,7 +75,18 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
      */
     @Override
     public PictureVO uploadPicture(Object inputSource, PictureUploadRequest pictureUploadRequest, User loginUser) {
-        return pictureDomainService.uploadPicture(inputSource, pictureUploadRequest, loginUser);
+        PictureVO pictureVO = pictureDomainService.uploadPicture(inputSource, pictureUploadRequest, loginUser);
+        // 2. 用例编排：仅在“更新已有图片”且属于“团队空间”时，触发协同编辑完成广播
+        if (pictureUploadRequest != null && pictureUploadRequest.getId() != null) {
+            Long spaceId = pictureVO.getSpaceId(); // 从落库返回的 VO 获取最准确的 spaceId（无论是请求传入还是老图回填）
+            if (spaceId != null) {
+                Space space = spaceApplicationService.getById(spaceId);
+                if (space != null && SpaceTypeEnum.TEAM.getValue().equals(space.getSpaceType())) {
+                    pictureEditHandler.notifyPictureEditComplete(pictureUploadRequest.getId(), loginUser);
+                }
+            }
+        }
+        return pictureVO;
     }
 
     /**
