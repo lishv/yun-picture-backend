@@ -1,4 +1,4 @@
-# ☁️ 云图库系统后端（DDD 架构版）
+# ☁️ 绘灵云图片协作平台后端（DDD 架构版）
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7.6-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Java](https://img.shields.io/badge/Java-17-orange.svg)](https://www.oracle.com/java/)
