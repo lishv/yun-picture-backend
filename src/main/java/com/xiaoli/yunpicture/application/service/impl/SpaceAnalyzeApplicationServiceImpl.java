@@ -298,11 +298,11 @@ public class SpaceAnalyzeApplicationServiceImpl  implements SpaceAnalyzeApplicat
         boolean queryPublic = spaceAnalyzeRequest.isQueryPublic();
         boolean queryAll = spaceAnalyzeRequest.isQueryAll();
         //全空间分析
-        if (!queryAll) {
+        if (queryAll) {
             return;
         }
         //公共图库
-        if (!queryPublic) {
+        if (queryPublic) {
             queryWrapper.isNull("spaceId");
             return;
         }
