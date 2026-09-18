@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 public class EmailManager {
-
+    // 发送邮件的 Bean
     @Resource
     private JavaMailSender mailSender;
 
@@ -51,10 +51,17 @@ public class EmailManager {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR);
         }
 
-        // 1. 检查 60 秒发送冷却
+        // =========================================================================
+        // 1. 【核心】：在最前面就用 setIfAbsent 抢占 60 秒冷却位（一步完成检查 + 占位）
+        // 如果抢到了（true），说明 60 秒内没人发过，放行；
+        // 如果没抢到（false），说明有人正在发或 60 秒内发过，直接当场拦截！
+        // =========================================================================
         String cooldownKey = COOLDOWN_KEY_PREFIX + biz + ":" + toEmail;
-        Boolean hasCooldown = stringRedisTemplate.hasKey(cooldownKey);
-        if (Boolean.TRUE.equals(hasCooldown)) {
+
+        Boolean acquireSuccess = stringRedisTemplate.opsForValue()
+                .setIfAbsent(cooldownKey, "1", 60, TimeUnit.SECONDS);
+
+        if (Boolean.FALSE.equals(acquireSuccess) || acquireSuccess == null) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "验证码发送过于频繁，请稍后再试");
         }
 
@@ -65,7 +72,7 @@ public class EmailManager {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
-            helper.setFrom(fromEmail, "绘灵云图片协作平台");// 发件名称
+            helper.setFrom(fromEmail, "绘灵云图片协作平台");
             helper.setTo(toEmail);
 
             String title = "register".equals(biz) ? "注册验证码" : "找回密码验证码";
@@ -87,15 +94,16 @@ public class EmailManager {
             log.info("邮件验证码已成功发送至: {}, 场景: {}", toEmail, biz);
         } catch (Exception e) {
             log.error("邮件发送异常: ", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+            // 异常兜底：如果邮件发送失败了，把刚抢到的冷却锁删掉，允许用户重新尝试
+            stringRedisTemplate.delete(cooldownKey);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "邮件发送失败，请稍后重试");
         }
 
         // 4. 将验证码保存至 Redis，5 分钟有效
         String codeKey = CODE_KEY_PREFIX + biz + ":" + toEmail;
         stringRedisTemplate.opsForValue().set(codeKey, code, 5, TimeUnit.MINUTES);
 
-        // 5. 设置 60 秒冷却防刷
-        stringRedisTemplate.opsForValue().set(cooldownKey, "1", 60, TimeUnit.SECONDS);
+        // 第 5 步彻底删掉！因为第 1 步已经原子性地设置了 60 秒冷却，这里无需重复设置！
     }
 
     /**

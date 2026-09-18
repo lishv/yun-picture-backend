@@ -126,3 +126,6 @@ ALTER TABLE `user`
 -- 2. 为 email 字段建立唯一索引（在 MySQL 中，多行 NULL 不冲突，有邮箱值时强制全局唯一）
 ALTER TABLE `user`
     ADD UNIQUE INDEX `uk_email` (`email`);
+-- 3. 为 picture 表增加createTime与id联合索引（用于按时间顺序查询图片）
+# ALTER TABLE picture
+#     ADD INDEX createTime_id (createTime, id);

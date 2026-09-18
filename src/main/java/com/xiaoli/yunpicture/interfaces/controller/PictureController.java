@@ -290,8 +290,6 @@ public class PictureController {
         String queryCondition = JSONUtil.toJsonStr(pictureQueryRequest);
         //转换成md5
         String hasKey = DigestUtils.md5Hex(queryCondition.getBytes());
-
-
         String cacheKey=String.format("yunpicture:listPictureVOByPage:%s", hasKey);
         //2.查询缓存
         //2.1先从本地缓存查询,如果有,直接返回
@@ -334,14 +332,15 @@ public class PictureController {
     public BaseResponse<CursorPageVO<PictureVO>> listPictureVOByCursor(@RequestBody PictureCursorQueryRequest cursorQueryRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(cursorQueryRequest == null||cursorQueryRequest.getPageSize()>20, ErrorCode.PARAMS_ERROR);
 
-        //普通用户只能看到审核通过的图片
+
         Long spaceId = cursorQueryRequest.getSpaceId();
         if(spaceId==null) {
-            //仅用户自己/管理员才能看到非公共图片
+            //无空间ID,只能看到审核通过的图片公共图片
             cursorQueryRequest.setNullSpaceId(true);//设置为true,查询公共图片
             cursorQueryRequest.setReviewStatus(PictureReviewStatusEnmu.PASS.getValue());
-        }else{
-            //私有空间,校验权限
+        }
+        else{
+            //私有空间,校验权限,目前私有空间不使用游标查询,但作为安全考虑,仍校验权限空间id,防止越权
             User loginUser = userApplicationService.getLoginUser(request);
             Space space = spaceApplicationService.getById(spaceId);
             ThrowUtils.throwIf(BeanUtil.isEmpty(space),ErrorCode.NOT_FOUND_ERROR,"空间不存在");
@@ -349,7 +348,7 @@ public class PictureController {
                 throw new BusinessException(ErrorCode.NO_AUTH_ERROR,"没有空间权限");
             }
         }
-        //接入缓存,如果有,直接返回
+        //接入缓存,如果有缓存,直接返回
         //1.构建key
         String queryCondition = JSONUtil.toJsonStr(cursorQueryRequest);
         //转换成md5
@@ -371,8 +370,27 @@ public class PictureController {
             CursorPageVO<PictureVO> cacheCursorPageVO = JSONUtil.toBean(cacheValue, CursorPageVO.class);
             return ResultUtils.success(cacheCursorPageVO);
         }
-        //3.未命中,则查询数据库
+        //缓存未命中限流, Redis 未命中后，先限制缓存未命中的数据库查询次数,同一个 IP 1 秒内最多允许 5 次缓存未命中查询数据库
+        String clientIp = request.getRemoteAddr();
+        String missRateLimitKey= "yunpicture:picture:cache-miss:ip:" + clientIp;//未命中的缓存key
+        Long missCount = stringRedisTemplate.opsForValue().increment(missRateLimitKey);
+        if (missCount != null && missCount == 1) {
+            //如果missCount为1,则说明是第一次查询,设置过期时间为1秒
+            stringRedisTemplate.expire(missRateLimitKey, 1, TimeUnit.SECONDS);
+        }
+        // 同一个 IP 1 秒内最多允许 5 次缓存未命中查询数据库
+        if (missCount != null && missCount > 5) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求过于频繁，请稍后再试");
+        }
+
+        //3.未命中,则查询数据库,直接把结果返回,并存入两个缓存,这里空值也缓存进去,防止穿透
         CursorPageVO<PictureVO> cursorPageVO = pictureApplicationService.listPictureVOByCursor(cursorQueryRequest, request);
+        //为了减少内存压力,我们将空值只缓存在redis里,设置30s
+        if(BeanUtil.isEmpty(cursorPageVO)||cursorPageVO.getRecords()==null||cursorPageVO.getRecords().isEmpty()){
+            stringRedisTemplate.opsForValue().set(cacheKey,JSONUtil.toJsonStr(cursorPageVO),30, TimeUnit.SECONDS);
+            return ResultUtils.success(cursorPageVO);
+        }
+
         //3.1存入本地缓存
         LOCAL_CACHE.put(cacheKey, JSONUtil.toJsonStr(cursorPageVO));
         //3.2存入redis缓存

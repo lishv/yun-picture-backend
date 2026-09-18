@@ -38,10 +38,11 @@ import com.xiaoli.yunpicture.infrastructure.mapper.PictureMapper;
 import com.xiaoli.yunpicture.shared.websocket.PictureEditHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import net.bytebuddy.implementation.bytecode.Throw;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
+
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -123,7 +124,6 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
     /**
      * PictureApplicationService
      * 获取图片包装类(多条)
-     *
      * @param picturePage 分页对象
      * @param request     HTTP请求对象
      * @return 分页对象,包含图片VO类列表
@@ -207,17 +207,20 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
         boolean hasCursorId = cursorRequest.getCursorId() != null;
 
         // createTime 和 id 必须同时存在或同时不存在。
-        ThrowUtils.throwIf(hasCursorCreateTime != hasCursorId, ErrorCode.PARAMS_ERROR, "游标参数必须同时提供");
+        if (hasCursorCreateTime != hasCursorId) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+
         // 复用已有的图片搜索条件。
         PictureQueryRequest queryRequest = new PictureQueryRequest();
-
         queryRequest.setSearchText(cursorRequest.getSearchText());
         queryRequest.setCategory(cursorRequest.getCategory());
         queryRequest.setTags(cursorRequest.getTags());
         queryRequest.setSpaceId(cursorRequest.getSpaceId());
         queryRequest.setNullSpaceId(cursorRequest.getNullSpaceId());
-        //设置搜索的审核状态，默认查询已审核的图片
         queryRequest.setReviewStatus(cursorRequest.getReviewStatus());
+
+        //根据条件查询图片
         QueryWrapper<Picture> queryWrapper = getQueryWrapper(queryRequest);
 
         //在上一批图片的基础条件上查询下一批图片
@@ -225,9 +228,8 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
         // createTime 小于上一批最后一项，
         // 或 createTime 相同但 id 更小。
         if (hasCursorCreateTime) {
-            queryWrapper.and(wrapper ->
-                    wrapper.lt("createTime", cursorRequest.getCursorCreateTime())
-                            .or(nested -> nested.eq("createTime", cursorRequest.getCursorCreateTime()).lt("id", cursorRequest.getCursorId()))
+            queryWrapper.and(
+                    wrapper -> wrapper.lt("createTime", cursorRequest.getCursorCreateTime()).or(nested -> nested.eq("createTime", cursorRequest.getCursorCreateTime()).lt("id", cursorRequest.getCursorId()))
             );
         }
 
@@ -236,16 +238,16 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
                 .orderByDesc("id")
                 // 多查询一项，用于判断还有没有下一批。
                 .last("LIMIT " + (pageSize + 1));
+        //查询这一批图片数据
         List<Picture> queriedPictures = this.list(queryWrapper);
 
-        boolean hasMore = queriedPictures.size() > pageSize;
+        boolean hasMore = queriedPictures.size() > pageSize;//因为多查询了一项，所以可以据此判断是否有下一批
 
         List<Picture> currentPictures;
 
         if (hasMore) {
-            currentPictures = new ArrayList<>(
-                    queriedPictures.subList(0, pageSize)
-            );
+            //截取前 pageSize 项的数据
+            currentPictures = new ArrayList<>(queriedPictures.subList(0, pageSize));
         } else {
             currentPictures = new ArrayList<>(queriedPictures);
         }
@@ -266,18 +268,11 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
 
         result.setRecords(cursorPictureVOPage.getRecords());
         result.setHasMore(hasMore);
-
+        //如果有下一批数据，设置下一批游标,用于下一次查询时的条件
         if (hasMore && !currentPictures.isEmpty()) {
-            Picture lastPicture = currentPictures.get(
-                    currentPictures.size() - 1
-            );
-
-            result.setNextCursorCreateTime(
-                    lastPicture.getCreateTime()
-            );
-            result.setNextCursorId(
-                    lastPicture.getId()
-            );
+            Picture lastPicture = currentPictures.get(currentPictures.size() - 1);
+            result.setNextCursorCreateTime(lastPicture.getCreateTime());
+            result.setNextCursorId(lastPicture.getId());
         }
 
         return result;

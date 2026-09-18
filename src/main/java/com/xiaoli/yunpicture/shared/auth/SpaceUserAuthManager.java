@@ -25,8 +25,6 @@ import java.util.List;
 @Component
 public class SpaceUserAuthManager {
     @Resource
-    private UserApplicationService userApplicationService;
-    @Resource
     private SpaceUserApplicationService spaceUserApplicationService;
 
     public  static  final SpaceUserAuthConfig SPACE_USER_AUTH_CONFIG;
@@ -69,14 +67,20 @@ public class SpaceUserAuthManager {
         }
         // 管理员权限
         List<String> ADMIN_PERMISSIONS = getPermissionsByRole(SpaceRoleEnum.ADMIN.getValue());
-        // 公共图库,仅管理员有所有权限
-        if (space == null) {
-            if (loginUser.isAdmin()) {
-                return ADMIN_PERMISSIONS;
-            }
-            return new ArrayList<>();
+
+        if (loginUser.isAdmin()) {
+            return ADMIN_PERMISSIONS;
         }
-        //根据控件类型获取权限列表
+        if (space == null)
+            return new ArrayList<>();
+//        // 公共图库,仅管理员有所有权限
+//        if (space == null) {
+//            if (loginUser.isAdmin()) {
+//                return ADMIN_PERMISSIONS;
+//            }
+//            return new ArrayList<>();
+//        }
+        //根据空间类型获取权限列表
         SpaceTypeEnum spaceTypeEnum = SpaceTypeEnum.getEnumByValue(space.getSpaceType());
         if (spaceTypeEnum == null) {
             return new ArrayList<>();
@@ -85,7 +89,7 @@ public class SpaceUserAuthManager {
         switch (spaceTypeEnum) {
             case PRIVATE:
                 // 私有空间，仅本人或管理员有所有权限
-                if (space.getUserId().equals(loginUser.getId()) || loginUser.isAdmin()) {
+                if (space.getUserId().equals(loginUser.getId())) {
                     return ADMIN_PERMISSIONS;
                 } else {
                     return new ArrayList<>();

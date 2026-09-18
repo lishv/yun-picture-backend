@@ -23,6 +23,7 @@ public class AliYunAiApi {
     private String apiKey;
     @Value("${aliYunAi.apiHost}")//不能为静态变量,否则会报错,因为静态变量在类加载时就赋值了,而这里是在运行时赋值的
     private String apiHost;
+
     private String CREATE_OUT_PAINTING_TASK_URL;
     private String GET_OUT_PAINTING_TASK_URL;
     @PostConstruct//在类加载完成后,调用init方法,初始化CREATE_OUT_PAINTING_TASK_URL和GET_OUT_PAINTING_TASK_URL

@@ -722,10 +722,10 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
         //创建括图任务
         CreateOutPaintingTaskRequest taskRequest = new CreateOutPaintingTaskRequest();
         CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
-        input.setImageUrl(picture.getUrl());
+        input.setImageUrl(picture.getUrl());//为输入ai扩图里增加图片url
         taskRequest.setInput(input);
         taskRequest.setParameters(createPictureOutPaintingTaskRequest.getParameters());
-        //创建任务
+        //创建任务,并根据任务返回url
         return aliYunAiApi.createOutPaintingTask(taskRequest);
 
     }
