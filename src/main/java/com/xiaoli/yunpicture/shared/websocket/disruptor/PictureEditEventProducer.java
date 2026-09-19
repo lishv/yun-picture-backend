@@ -30,14 +30,16 @@ public class PictureEditEventProducer {
      */
     public void publishEvent(PictureEditRequestMessage pictureEditRequestMessage, WebSocketSession session, User user, Long pictureId) {
         RingBuffer<PictureEditEvent> ringBuffer = pictureEditEventDisruptor.getRingBuffer();// 获取 ringBuffer缓冲区,用于发布事件
-        // 获取可以生成的位置
+        //  申请一个可用的事件序列位置。
         long next = ringBuffer.next();
+        //取出这个位置给预先准备好的事件对象。
         PictureEditEvent pictureEditEvent = ringBuffer.get(next);
+        //  把本次 WebSocket 消息的相关数据填入事件。
         pictureEditEvent.setSession(session);
         pictureEditEvent.setPictureEditRequestMessage(pictureEditRequestMessage);
         pictureEditEvent.setUser(user);
         pictureEditEvent.setPictureId(pictureId);
-        // 发布事件
+        // 提交事件，通知消费者可以读取。
         ringBuffer.publish(next);
     }
 

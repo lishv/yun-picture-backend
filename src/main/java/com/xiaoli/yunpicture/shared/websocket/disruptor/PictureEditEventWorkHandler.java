@@ -30,6 +30,11 @@ public class PictureEditEventWorkHandler implements WorkHandler<PictureEditEvent
     @Resource
     private UserApplicationService userApplicationService;
 
+    /**
+     * 处理图片编辑事件,根据消息类型调用websocket对应的方法处理消息
+     * @param event published to the disruptor
+     * @throws Exception 处理过程中可能抛出的异常
+     */
     @Override
     public void onEvent(PictureEditEvent event) throws Exception {
         PictureEditRequestMessage pictureEditRequestMessage = event.getPictureEditRequestMessage();

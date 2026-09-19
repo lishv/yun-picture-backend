@@ -80,6 +80,7 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
         // 2. 用例编排：仅在“更新已有图片”且属于“团队空间”时，触发协同编辑完成广播
         if (pictureUploadRequest != null && pictureUploadRequest.getId() != null) {
             Long spaceId = pictureVO.getSpaceId(); // 从落库返回的 VO 获取最准确的 spaceId（无论是请求传入还是老图回填）
+            // 3.仅在“更新已有图片”且属于“团队空间”时，触发协同编辑完成广播
             if (spaceId != null) {
                 Space space = spaceApplicationService.getById(spaceId);
                 if (space != null && SpaceTypeEnum.TEAM.getValue().equals(space.getSpaceType())) {
