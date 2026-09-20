@@ -87,7 +87,8 @@ public class GetImagePageUrlApi {
     }
     public static void main(String[] args) {
         // 测试以图搜图功能
-        String imageUrl = "https://yun-picture-1425973504.cos.ap-nanjing.myqcloud.com/space/2093620598119907330/2026-08-29-j72qcRlR2bcCR1RS.webp";
+        //String imageUrl = "https://yun-picture-1425973504.cos.ap-nanjing.myqcloud.com/space/2093620598119907330/2026-08-29-j72qcRlR2bcCR1RS.webp";
+        String imageUrl = "https://img.huilingyun.asia/space/2093620598119907330/2026-08-29-j72qcRlR2bcCR1RS.webp";
         String result = getImagePageUrl(imageUrl);
         System.out.println("搜索成功，结果 URL：" + result);
     }
