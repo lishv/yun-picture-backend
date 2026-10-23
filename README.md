@@ -7,7 +7,7 @@
 [![Disruptor](https://img.shields.io/badge/LMAX%20Disruptor-3.4.2-red.svg)](https://lmax-exchange.github.io/disruptor/)
 [![ShardingSphere](https://img.shields.io/badge/ShardingSphere-5.2.0-blueviolet.svg)](https://shardingsphere.apache.org/)
 
-一款面向个人与企业团队的高性能、现代化云端图片管理与协同创作平台后端服务。本项目采用 **DDD（领域驱动设计，Domain-Driven Design）** 四层架构思想重构，结合 **WebSocket 协同同步**、**LMAX Disruptor 环形并发队列**、**ShardingSphere 动态分表**、**二级缓存** 与 **AI 图像扩展**，具备高并发、高内聚、易扩展的企业级生产规范。
+一款面向个人与企业团队的高性能、现代化云端图片管理与协同创作平台后端服务。本项目采用 **DDD（领域驱动设计，Domain-Driven Design）** 四层架构思想重构，结合 **WebSocket 协同同步**、**LMAX Disruptor 环形并发队列**、**ShardingSphere 动态分表**、**二级缓存** 与 **AI 图像扩展**，具备高并发、高内聚、易扩展的企业级生产规范。http://www.huilingyun.asia/
 
 ---
 
