@@ -24,6 +24,8 @@ import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
 import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.messaging.picture.PictureCleanupPublisher;
+import com.xiaoli.yunpicture.infrastructure.messaging.picture.PictureCleanupTaskService;
 import com.xiaoli.yunpicture.infrastructure.utils.ColorSimilarUtils;
 import com.xiaoli.yunpicture.interfaces.dto.picture.*;
 import com.xiaoli.yunpicture.interfaces.vo.picture.PictureVO;
@@ -37,6 +39,7 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.core.task.TaskRejectedException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -72,6 +75,11 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
     private AliYunAiApi aliYunAiApi;
     @Resource
     private PictureRepository pictureRepository;
+    @Resource
+    private PictureCleanupTaskService pictureCleanupTaskService;
+
+    @Resource
+    private PictureCleanupPublisher pictureCleanupPublisher;
 
     /**
      * 上传图片/更新图片
@@ -527,38 +535,75 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
     @Override
     public void deletePicture(long pictureId, User loginUser) {
         ThrowUtils.throwIf(pictureId <= 0, ErrorCode.PARAMS_ERROR);
-        ThrowUtils.throwIf(loginUser == null, ErrorCode.NO_AUTH_ERROR);
-        // 判断是否存在
+        ThrowUtils.throwIf(loginUser == null || loginUser.getId() == null, ErrorCode.NO_AUTH_ERROR);
+
+        // 查询当前仍然有效的图片
         Picture oldPicture = pictureRepository.getById(pictureId);
+
         ThrowUtils.throwIf(BeanUtil.isEmpty(oldPicture), ErrorCode.NOT_FOUND_ERROR);
-        // 校验权限//改为使用注解鉴权
-        //checkPictureAuth(loginUser, oldPicture);
-        // 操作数据库
-        //软删除,直接统一设置为已删除状态,并删除图片来源地址哈希,并释放空间容量
-        transactionTemplate.execute(status -> {
+
+        /*
+         * 在同一个事务中完成：
+         * 1. 软删除图片；
+         * 2. 创建待发送清理任务；
+         * 3. 恢复空间额度。
+         *
+         * 任意一步失败，整个事务都会回滚。
+         */
+        Long taskId = transactionTemplate.execute(status -> {
             UpdateWrapper<Picture> updateWrapper = new UpdateWrapper<>();
             updateWrapper.eq("id", pictureId)
                     .eq("isDelete", 0)
                     .set("sourceHash", null)
                     .set("isDelete", 1);
-            boolean result = pictureRepository.update(updateWrapper);
-            ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+
+            boolean pictureUpdated = pictureRepository.update(updateWrapper);
+
+            ThrowUtils.throwIf(!pictureUpdated, ErrorCode.OPERATION_ERROR, "删除图片失败");
+
+            /*
+             * 必须放在 spaceId 判断之前。
+             * 公共图片虽然不需要恢复空间额度，
+             * 但同样需要创建文件清理任务。
+             */
+            Long cleanupTaskId = pictureCleanupTaskService.createPendingTask(oldPicture, loginUser);
+
             Long spaceId = oldPicture.getSpaceId();
-            //公共图片,无需恢复空间额度
-            if (spaceId == null) {
-                return true;
+            if (spaceId != null) {
+                boolean spaceUpdated = spaceApplicationService.lambdaUpdate()
+                                .eq(Space::getId, spaceId)
+                                .setSql("totalSize = totalSize - " + oldPicture.getPicSize())
+                                .setSql("totalCount = totalCount - 1")
+                                .update();
+                ThrowUtils.throwIf(!spaceUpdated, ErrorCode.OPERATION_ERROR, "恢复空间额度失败");
             }
-            //恢复空间额度
-            boolean update = spaceApplicationService.lambdaUpdate()
-                    .eq(Space::getId, spaceId)
-                    .setSql("totalSize=totalSize-" + oldPicture.getPicSize())
-                    .setSql("totalCount=totalCount-1")
-                    .update();
-            ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR);
-            return true;
+
+            return cleanupTaskId;
         });
-        // 异步清理文件
-        this.clearPictureFile(oldPicture);
+
+        ThrowUtils.throwIf(taskId == null, ErrorCode.OPERATION_ERROR, "创建图片清理任务失败");
+
+        /*
+         * TransactionTemplate.execute 已经返回，
+         * 说明数据库事务已经提交。
+         *
+         * 此处只把任务提交给后台线程，不等待 RabbitMQ Confirm，
+         * 更不会等待 COS 删除。
+         */
+        try {
+            /*
+             * 异步发布清理任务。
+             * 不等待 RabbitMQ Confirm，
+             * 更不会等待 COS 删除。
+             */
+            pictureCleanupPublisher.publishAsync(taskId);
+        } catch (TaskRejectedException exception) {
+            /*
+             * 线程池繁忙时，任务仍保持 STATUS_PENDING。
+             * 后续补偿扫描会重新发送，不影响删除接口返回。
+             */
+            log.warn("图片清理发布线程池繁忙，任务等待补偿发送，taskId: {}", taskId);
+        }
     }
 
     @Override

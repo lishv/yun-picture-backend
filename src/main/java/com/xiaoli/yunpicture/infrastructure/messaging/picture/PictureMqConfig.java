@@ -126,5 +126,6 @@ public class PictureMqConfig  {
                 throw new ImmediateRequeueAmqpException("图片清理消息转交失败", exception);
             }
         };
+
     }
 }
