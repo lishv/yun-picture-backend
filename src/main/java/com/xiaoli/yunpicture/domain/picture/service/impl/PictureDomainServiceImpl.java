@@ -449,41 +449,43 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
     }
 
     /**
-     * 异步删除图片文件
-     *
-     * @param oldPicture 图片实体类
+     * 清理图片文件。
+     * 由 RabbitMQ 消费者同步调用，方法正常结束后才 ACK。
+     *这个方法是消费者最终执行删除的地方。只把 count > 1 改为 count > 0
+     * 因为当前图片已经软删除，不会被 MyBatis-Plus 的统计 SQL 计入。
+     * @param oldPicture 已软删除图片的信息
      */
-    @Async
     @Override
     public void clearPictureFile(Picture oldPicture) {
-        //判断图片是否被多条记录使用
+        // 当前图片已经软删除，因此这里只统计其他仍然有效的图片记录
         Long count = pictureRepository.lambdaQuery()
                 .eq(Picture::getUrl, oldPicture.getUrl())
                 .count();
-        if (count > 1) {
-            //被多条记录使用,不删除
+
+        if (count > 0) {
+            // 仍有其他有效图片使用这个文件，不删除 COS 文件
             return;
         }
-        //删除图片文件(即压缩图)
+
+        // 删除原图
         String url = oldPicture.getUrl();
         cosManager.deleteObject(url);
 
         /**
-         *  //删除压缩图
-         *         String[] split = url.split("\\.");
-         *         //删除压缩图
-         *         StringBuilder sb=new StringBuilder();
-         *         for(int i=0;i<split.length-1;i++){
-         *             sb.append(split[i]).append(".");
-         *         }
-         *         sb.append("webp");
-         *         String compressUrl=sb.toString();
-         *         cosManager.deleteObject(compressUrl);
+         * 删除压缩图
+         *
+         * String[] split = url.split("\\.");
+         * StringBuilder sb = new StringBuilder();
+         * for (int i = 0; i < split.length - 1; i++) {
+         *     sb.append(split[i]).append(".");
+         * }
+         * sb.append("webp");
+         * String compressUrl = sb.toString();
+         * cosManager.deleteObject(compressUrl);
          */
-        //删除缩略图
+
+        // 删除缩略图
         cosManager.deleteObject(oldPicture.getThumbnailUrl());
-
-
     }
 
     /**

@@ -129,3 +129,22 @@ ALTER TABLE `user`
 -- 3. 为 picture 表增加createTime与id联合索引（用于按时间顺序查询图片）
 # ALTER TABLE picture
 #     ADD INDEX createTime_id (createTime, id);
+-- 4. 图片清理任务表
+CREATE TABLE picture_cleanup_task
+(
+    id           BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '任务 id',
+    pictureId    BIGINT       NOT NULL COMMENT '图片 id',
+    operatorId   BIGINT       NOT NULL COMMENT '发起删除的用户 id',
+    status       TINYINT      NOT NULL DEFAULT 0 COMMENT
+        '0待发送 1处理中 2等待延迟重试 3已完成 4最终失败 5人工处理完成',
+    lastError    VARCHAR(1000) NULL COMMENT '最后一次失败原因',
+    createTime   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updateTime   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
+        ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+
+    UNIQUE KEY uk_pictureId (pictureId),
+    INDEX idx_status_updateTime (status, updateTime)
+) ENGINE = InnoDB
+  DEFAULT CHARSET = utf8mb4
+  COLLATE = utf8mb4_unicode_ci
+    COMMENT = '图片文件清理任务';

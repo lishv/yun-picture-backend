@@ -63,11 +63,6 @@ spring:
 
     # rabbitmq 配置
   rabbitmq:
-    # 后端 JAR 与 RabbitMQ 位于同一台宝塔服务器时使用本机地址；异机运行可用环境变量覆盖。
-    host: ${RABBITMQ_HOST:127.0.0.1}  # RabbitMQ 服务器地址
-    port: ${RABBITMQ_PORT:5672}  # RabbitMQ java 客户端端口
-    username: ${RABBITMQ_USERNAME:yun_picture}  # RabbitMQ 用户名
-    password: 'L2570410870'  # RabbitMQ 密码
     virtual-host: ${RABBITMQ_VHOST:/yun-picture}  # RabbitMQ 虚拟主机
     connection-timeout: 5s  # RabbitMQ 连接超时时间
     publisher-confirm-type: correlated  # 发布确认类型，correlated 为默认值
@@ -82,6 +77,14 @@ spring:
         max-concurrency: 2 #最大并发消费者线程数
         prefetch: 5 #每个消费者预取消息数量，控制分发均衡性
         default-requeue-rejected: false #被拒绝消息是否重新入队，false 防止死循环
+        # 重试配置
+        retry:
+          enabled: true
+          max-attempts: 3 # 最大重试次数
+          initial-interval: 1s # 初始重试间隔时间
+          multiplier: 1 # 重试间隔倍数
+          max-interval: 5s # 最大重试间隔时间
+          stateless: true
 
 #mybatis-plus配置
 mybatis-plus:
