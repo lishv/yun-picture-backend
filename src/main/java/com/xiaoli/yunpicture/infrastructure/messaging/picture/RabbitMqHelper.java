@@ -13,8 +13,20 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+
+
+
+
 /**
  * RabbitMQ 消息发送工具。
+ *
+ * 提供可靠的消息发送能力：发送持久化消息后，同步等待 Broker 确认，
+ * 只有同时满足以下两个条件才视为发送成功：
+ * 1. Broker 返回 ACK（消息已成功到达 Broker）；
+ * 2. 消息没有因为无法路由而被 Return（消息已成功路由到队列）。
+ *
+ * 注意：该方法会阻塞等待确认，只能在后台线程中调用，
+ * 不能直接放在 HTTP 请求线程中执行，避免接口响应变慢。
  */
 @Component
 @RequiredArgsConstructor
@@ -88,7 +100,7 @@ public class RabbitMqHelper {
             //5 秒内没拿到 → 抛 TimeoutException。
             //Broker 返回确认后，Future 完成，拿到 Confirm 对象。
             CorrelationData.Confirm confirm = correlationData
-                    .getFuture()
+                    .getFuture()// 拿到一个 CompletableFuture<Confirm>,异步等待确认
                     .get(5, TimeUnit.SECONDS);
 
 

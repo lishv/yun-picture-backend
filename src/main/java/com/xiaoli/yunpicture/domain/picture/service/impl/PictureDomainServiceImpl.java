@@ -475,7 +475,7 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
             return;
         }
 
-        // 删除原图
+        // 删除cos原图
         String url = oldPicture.getUrl();
         cosManager.deleteObject(url);
 

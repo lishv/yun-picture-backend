@@ -14,8 +14,9 @@ import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import com.xiaoli.yunpicture.infrastructure.messaging.picture.MQPictureConstants;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-
+@EnableScheduling
 @Configuration
 @Slf4j
 public class PictureMqConfig  {
@@ -76,56 +77,163 @@ public class PictureMqConfig  {
     }
 
     @Bean
-    public MessageRecoverer pictureMessageRecoverer(RabbitTemplate rabbitTemplate) {
-
-        // 这个对象在创建 Bean 时初始化一次，后续复用
-        //是 Spring 提供的工具：把失败消息重新发布到指定的交换机+路由键，并且等待 Broker 确认（publisher confirm）,也就是延迟重试队列。
+    public MessageRecoverer pictureMessageRecoverer(RabbitTemplate rabbitTemplate, ObjectMapper objectMapper, PictureCleanupTaskService taskService) {
+        /*
+         * 首轮消费失败后，把消息可靠地重新发布到延迟交换机，
+         * 并等待 Broker Confirm。
+         */
         RepublishMessageRecovererWithConfirms delayRecoverer =
                 new RepublishMessageRecovererWithConfirms(
                         rabbitTemplate,
                         MQPictureConstants.DELAY_Picture_EXCHANGE_NAME,
                         MQPictureConstants.DELAY_Picture_KEY,
-                        CachingConnectionFactory.ConfirmType.CORRELATED //要求 Broker 返回确认，能把 confirm 和原消息对应起来。
+                        CachingConnectionFactory.ConfirmType.CORRELATED
                 );
 
-        delayRecoverer.setConfirmTimeout(5000);//设置确认超时时间为 5 秒
+        delayRecoverer.setConfirmTimeout(5000);
 
         return (message, cause) -> {
-            //先判断消息来自哪个队列,这个消息是正常队列还是延迟队列还是死信队列
-            String sourceQueue = message.getMessageProperties().getConsumerQueue();
-            // 重试队列仍消费失败：不重入，由 DLX 转到最终死信队列
+            String sourceQueue =
+                    message.getMessageProperties().getConsumerQueue();
 
-            // 分支一：来自延迟重试队列 → 直接进死信
-            if (MQPictureConstants.DELAY_Picture_QUEUE_NAME.equals(sourceQueue)) {
-                log.error("延迟重试仍失败，转入最终死信队列", cause);
-                throw new AmqpRejectAndDontRequeueException("延迟删除图片仍然失败", cause);
+            Long taskId = extractTaskId(objectMapper, message);
+
+            /*
+             * 第二轮：延迟队列重试仍然失败。
+             */
+            if (MQPictureConstants.DELAY_Picture_QUEUE_NAME
+                    .equals(sourceQueue)) {
+
+                /*
+                 * 必须先把失败状态保存到数据库，
+                 * 再拒绝消息进入最终死信队列。
+                 */
+                if (taskId != null) {
+                    try {
+                        taskService.markFailed(taskId, cause);
+                    } catch (Exception statusException) {
+                        /*
+                         * 数据库失败状态没有保存成功时不能直接死信，
+                         * 否则超级管理员将无法在任务表中看到它。
+                         */
+                        log.error(
+                                "记录图片清理最终失败状态失败，延迟消息重新入队，taskId: {}",
+                                taskId,
+                                statusException
+                        );
+
+                        throw new ImmediateRequeueAmqpException(
+                                "记录图片清理最终失败状态失败",
+                                statusException
+                        );
+                    }
+                }
+
+                log.error(
+                        "图片延迟清理仍然失败，转入最终死信队列，taskId: {}",
+                        taskId,
+                        cause
+                );
+
+                /*
+                 * requeue=false，由延迟队列配置的 DLX
+                 * 将消息转入最终死信队列。
+                 */
+                throw new AmqpRejectAndDontRequeueException(
+                        "延迟删除图片仍然失败",
+                        cause
+                );
             }
 
-            // 分支二：来源不认识 → 立即重新入队
-            if (!MQPictureConstants.NORMAL_Picture_QUEUE_NAME.equals(sourceQueue)) {
-                throw new ImmediateRequeueAmqpException("无法识别图片清理消息的来源队列：" + sourceQueue, cause);
+            /*
+             * 防止其他未知队列错误使用当前 Recoverer。
+             */
+            if (!MQPictureConstants.NORMAL_Picture_QUEUE_NAME
+                    .equals(sourceQueue)) {
+
+                throw new ImmediateRequeueAmqpException(
+                        "无法识别图片清理消息来源队列：" + sourceQueue,
+                        cause
+                );
             }
 
-            //分支三：来自正常队列 → 转交延迟重试队列
-            //克隆一份消息（不改动原消息）。
-            Message copy = MessageBuilder
+            /*
+             * 第一轮：正常队列消费失败。
+             * 复制原消息，并设置 RabbitMQ 4.4 原生延迟投递时间。
+             */
+            Message delayedMessage = MessageBuilder
                     .fromClonedMessage(message)
-                    .setDeliveryMode(MessageDeliveryMode.PERSISTENT)//持久化消息
-//            设置 x-opt-delivery-time 头：这是 RabbitMQ 原生延迟队列的投递时间戳，now + 1800000ms（30 分钟）。
-                    .setHeader("x-opt-delivery-time", System.currentTimeMillis() + 1_800_000L)
+                    .setDeliveryMode(MessageDeliveryMode.PERSISTENT)
+                    .setHeader(
+                            "x-opt-delivery-time",
+                            System.currentTimeMillis() + 1_800_000L
+                    )
                     .build();
 
+            /*
+             * 这里只捕获消息转交失败。
+             * 转交失败时，正常队列原消息必须重新入队。
+             */
             try {
-                //把克隆消息发到延迟交换机，同步等待 Broker confirm。
-                delayRecoverer.recover(copy, cause);
-                // 转交确认成功，正常返回，Spring AUTO ACK 原消息
-                log.warn("消息已确认转入重试队列，30分钟后再次消费");
-            } catch (Exception exception) {
-                //转交失败，保留原消息， 原消息重新入
-                log.error("转交重试队列失败，保留原消息", exception);
-                throw new ImmediateRequeueAmqpException("图片清理消息转交失败", exception);
-            }
-        };
+                delayRecoverer.recover(delayedMessage, cause);
+            } catch (Exception publishException) {
+                log.error(
+                        "转交延迟重试队列失败，正常队列原消息重新入队，taskId: {}",
+                        taskId,
+                        publishException
+                );
 
+                throw new ImmediateRequeueAmqpException(
+                        "图片清理消息转交延迟队列失败",
+                        publishException
+                );
+            }
+
+            /*
+             * 到这里说明 Broker 已经确认延迟消息。
+             *
+             * 如果数据库状态更新偶然失败，不能 NACK 原消息，
+             * 因为延迟消息已经成功存在于 RabbitMQ 中。
+             * 延迟消费者也允许从 PROCESSING 状态继续处理。
+             */
+            if (taskId != null) {
+                try {
+                    taskService.markWaitingRetry(taskId, cause);
+                } catch (Exception statusException) {
+                    log.error("延迟消息已确认，但更新等待重试状态失败，taskId: {}",
+                            taskId,
+                            statusException
+                    );
+                }
+            }
+
+            /*
+             * Recoverer 正常返回：
+             * Spring AUTO ACK 正常队列中的原消息。
+             */
+            log.warn(
+                    "图片清理消息已确认转入延迟队列，将在30分钟后再次消费，taskId: {}",
+                    taskId
+            );
+        };
     }
+    /**
+     * 从 RabbitMQ JSON 消息中读取任务 id。
+     *
+     * 解析失败时返回 null，消息仍会按照当前队列规则
+     * 进入延迟队列或最终死信队列，避免毒消息无限重入。
+     */
+    private Long extractTaskId(
+            ObjectMapper objectMapper,
+            Message message) {
+        try {
+            PictureDeleteMessage deleteMessage = objectMapper.readValue(message.getBody(), PictureDeleteMessage.class);
+
+            return deleteMessage == null ? null : deleteMessage.getTaskId();
+        } catch (Exception exception) {
+            log.error("无法解析图片清理消息中的 taskId", exception);
+            return null;
+        }
+    }
+
 }

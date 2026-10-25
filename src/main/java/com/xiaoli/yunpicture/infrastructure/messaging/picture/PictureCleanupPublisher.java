@@ -32,9 +32,7 @@ public class PictureCleanupPublisher {
         PictureCleanupTask task = PictureCleanupTaskMapper.selectById(taskId);
 
         // 只发送待发送任务，避免已经完成或正在重试的任务被重复发布
-        if (task == null ||!Integer.valueOf(PictureCleanupTask.STATUS_PENDING).equals(task.getStatus())) {
-            return;
-        }
+        if (task == null ||!Integer.valueOf(PictureCleanupTask.STATUS_PENDING).equals(task.getStatus())) {return;}
 
         PictureDeleteMessage pictureDeleteMessage = new PictureDeleteMessage();
         pictureDeleteMessage.setTaskId(taskId);// 设置删除信息的任务 ID
@@ -63,8 +61,7 @@ public class PictureCleanupPublisher {
             }
         } catch (Exception exception) {
             // 保持 STATUS_PENDING，后续由待发送任务补偿扫描重新发布
-            log.error("图片清理任务发送 MQ 失败，保留待发送状态，taskId: {}", taskId, exception
-            );
+            log.error("图片清理任务发送 MQ 失败，保留待发送状态，taskId: {}", taskId, exception);
         }
     }
 }

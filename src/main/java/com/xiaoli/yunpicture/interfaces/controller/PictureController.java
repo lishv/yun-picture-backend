@@ -16,13 +16,16 @@ import com.xiaoli.yunpicture.infrastructure.api.imagesearch.ImageSearchApiFacade
 import com.xiaoli.yunpicture.infrastructure.api.imagesearch.model.ImageSearchResult;
 import com.xiaoli.yunpicture.infrastructure.common.BaseResponse;
 import com.xiaoli.yunpicture.infrastructure.common.DeleteRequest;
+import com.xiaoli.yunpicture.infrastructure.common.PageRequest;
 import com.xiaoli.yunpicture.infrastructure.common.ResultUtils;
 import com.xiaoli.yunpicture.domain.user.constant.UserConstant;
 import com.xiaoli.yunpicture.infrastructure.exception.BusinessException;
 import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import com.xiaoli.yunpicture.infrastructure.exception.ThrowUtils;
+import com.xiaoli.yunpicture.infrastructure.messaging.picture.PictureCleanupTaskService;
 import com.xiaoli.yunpicture.interfaces.assembler.PictureAssembler;
 import com.xiaoli.yunpicture.interfaces.dto.picture.*;
+import com.xiaoli.yunpicture.interfaces.vo.picture.PictureCleanupFailureVO;
 import com.xiaoli.yunpicture.shared.auth.SpaceUserAuthManager;
 import com.xiaoli.yunpicture.shared.auth.StpKit;
 import com.xiaoli.yunpicture.shared.auth.annotation.SaSpaceCheckPermission;
@@ -66,6 +69,8 @@ public class PictureController {
     private SpaceUserAuthManager spaceUserAuthManager;
     @Resource
     private PictureEditHandler pictureEditHandler;
+    @Resource
+    private PictureCleanupTaskService pictureCleanupTaskService;
     /**
      * 本地缓存
      */
@@ -531,6 +536,34 @@ public class PictureController {
         ThrowUtils.throwIf(StrUtil.isBlank(taskId), ErrorCode.PARAMS_ERROR);
         GetOutPaintingTaskResponse task = aliYunApi.getOutPaintingTask(taskId);
         return ResultUtils.success(task);
+    }
+    /**
+     * 分页查询图片文件清理失败任务，仅超级管理员可用。
+     */
+    @PostMapping("/cleanup/failures/page")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Page<PictureCleanupFailureVO>>
+    listCleanupFailures(@RequestBody PageRequest pageRequest) {
+        ThrowUtils.throwIf(pageRequest == null, ErrorCode.PARAMS_ERROR);
+
+        Page<PictureCleanupFailureVO> result = pictureCleanupTaskService.listFailedTasks(pageRequest.getCurrent(), pageRequest.getPageSize());
+
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 将清理失败任务标记为已人工处理，仅超级管理员可用。
+     */
+    @PostMapping("/cleanup/failures/resolve")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Boolean> resolveCleanupFailure(
+            @RequestBody DeleteRequest deleteRequest
+    ) {
+        ThrowUtils.throwIf(deleteRequest == null|| deleteRequest.getId() == null || deleteRequest.getId() <= 0, ErrorCode.PARAMS_ERROR);
+
+        boolean result = pictureCleanupTaskService.resolveFailedTask(deleteRequest.getId());
+
+        return ResultUtils.success(result);
     }
 
 
