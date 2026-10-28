@@ -1,6 +1,5 @@
 package com.xiaoli.yunpicture.interfaces.dto.picture;
 
-import com.xiaoli.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskRequest;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -14,9 +13,9 @@ public class CreatePictureOutPaintingTaskRequest implements Serializable {
     private Long pictureId;
 
     /**
-     * 扩图参数
+     * AI 绘图提示词
      */
-    private CreateOutPaintingTaskRequest.Parameters parameters;
+    private String prompt;
 
     private static final long serialVersionUID = 1L;
 }

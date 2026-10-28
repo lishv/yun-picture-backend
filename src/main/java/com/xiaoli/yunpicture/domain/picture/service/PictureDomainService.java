@@ -103,10 +103,10 @@ public interface PictureDomainService{
     void editPictureByBatch(PictureEditByBatchRequest pictureEditByBatchRequest, User loginUser);
 
     /**
-     * 创建图片括图任务
-     * @param createPictureOutPaintingTaskRequest 创建图片括图任务请求参数
+     * 创建 AI 绘图任务
+     * @param createPictureOutPaintingTaskRequest 创建 AI 绘图任务请求参数
      * @param loginUser 登录用户对象
-     * @return 创建图片括图任务响应参数
+     * @return 创建 AI 绘图任务响应参数
      */
      CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser);
 

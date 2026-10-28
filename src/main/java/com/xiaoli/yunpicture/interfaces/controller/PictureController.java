@@ -513,17 +513,19 @@ public class PictureController {
     }
 
     /**
-     * 创建 AI 扩图任务
-     * @param createPictureOutPaintingTaskRequest 创建 AI 扩图任务请求参数
+     * 创建 AI 绘图任务
+     * @param createPictureOutPaintingTaskRequest 创建 AI 绘图任务请求参数
      * @param request HTTP请求对象
-     * @return 创建 AI 扩图任务响应参数
+     * @return 创建 AI 绘图任务响应参数
      */
     @SaSpaceCheckPermission(value= SpaceUserPermissionConstant.PICTURE_EDIT)
     @PostMapping("/out_painting/create_task")
     public BaseResponse<CreateOutPaintingTaskResponse> createPictureOutPaintingTask(
             @RequestBody CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest,
             HttpServletRequest request) {
-        if (createPictureOutPaintingTaskRequest == null || createPictureOutPaintingTaskRequest.getPictureId() == null) {
+        if (createPictureOutPaintingTaskRequest == null
+                || createPictureOutPaintingTaskRequest.getPictureId() == null
+                || StrUtil.isBlank(createPictureOutPaintingTaskRequest.getPrompt())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         User loginUser = userApplicationService.getLoginUser(request);
@@ -531,7 +533,7 @@ public class PictureController {
         return ResultUtils.success(response);
     }
     /**
-     * 查询 AI 扩图任务
+     * 查询 AI 绘图任务
      */
     @GetMapping("/out_painting/get_task")
     public BaseResponse<GetOutPaintingTaskResponse> getPictureOutPaintingTask(String taskId) {

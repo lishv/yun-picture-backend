@@ -754,10 +754,10 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
 
     }
     /**
-     * 创建图片括图任务
-     * @param createPictureOutPaintingTaskRequest 创建图片括图任务请求参数
+     * 创建 AI 绘图任务
+     * @param createPictureOutPaintingTaskRequest 创建 AI 绘图任务请求参数
      * @param loginUser 登录用户对象
-     * @return 创建图片括图任务响应参数
+     * @return 创建 AI 绘图任务响应参数
      */
     @Override
     public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest , User loginUser) {
@@ -766,13 +766,20 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
         Picture picture = Optional.ofNullable(pictureRepository.getById(pictureId)).orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "图片不存在"));
         //校验权限//改为使用注解鉴权
         //checkPictureAuth(loginUser, picture);
-        //创建括图任务
+        // 创建 AI 绘图任务
         CreateOutPaintingTaskRequest taskRequest = new CreateOutPaintingTaskRequest();
+        CreateOutPaintingTaskRequest.Content imageContent = new CreateOutPaintingTaskRequest.Content();
+        imageContent.setImage(picture.getUrl());
+        CreateOutPaintingTaskRequest.Content textContent = new CreateOutPaintingTaskRequest.Content();
+        textContent.setText(createPictureOutPaintingTaskRequest.getPrompt());
+        CreateOutPaintingTaskRequest.Message message = new CreateOutPaintingTaskRequest.Message();
+        message.setRole("user");
+        message.setContent(List.of(imageContent, textContent));
         CreateOutPaintingTaskRequest.Input input = new CreateOutPaintingTaskRequest.Input();
-        input.setImageUrl(picture.getUrl());//为输入ai扩图里增加图片url
+        input.setMessages(List.of(message));
         taskRequest.setInput(input);
-        taskRequest.setParameters(createPictureOutPaintingTaskRequest.getParameters());
-        //创建任务,并根据任务返回url
+        taskRequest.setParameters(new CreateOutPaintingTaskRequest.Parameters());
+        // 创建任务并返回任务 ID
         return aliYunAiApi.createOutPaintingTask(taskRequest);
 
     }

@@ -365,11 +365,11 @@ public class PictureApplicationServiceImpl extends ServiceImpl<PictureMapper, Pi
     }
 
     /**
-     * 创建图片括图任务
+     * 创建 AI 绘图任务
      *
-     * @param createPictureOutPaintingTaskRequest 创建图片括图任务请求参数
+     * @param createPictureOutPaintingTaskRequest 创建 AI 绘图任务请求参数
      * @param loginUser                           登录用户对象
-     * @return 创建图片括图任务响应参数
+     * @return 创建 AI 绘图任务响应参数
      */
     @Override
     public CreateOutPaintingTaskResponse createPictureOutPaintingTask(CreatePictureOutPaintingTaskRequest createPictureOutPaintingTaskRequest, User loginUser) {
