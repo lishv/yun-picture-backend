@@ -9,7 +9,7 @@
 ## 协议边界
 
 - Spring AMQP / AMQP 0-9-1 保留负责：队列和交换机声明、普通清理消息发布、正常队列消费、延迟队列消费、最终死信消费。
-- RabbitMQ 官方 AMQP 1.0 Java Client 仅负责：把首轮失败消息以未来投递时间发布到现有 quorum 延迟队列。
+- RabbitMQ 官方 AMQP 1.0 Java Client 仅负责：把首轮失败消息以未来投递时间发布到普通 Direct Exchange，再路由到现有 quorum 延迟队列。
 - 不迁移现有消费者，不升级 Spring Boot，不引入延迟交换机插件，不改为 TTL 加 DLX。
 
 ## 依赖
@@ -34,7 +34,7 @@
 
 - 应用启动时创建一个 AMQP 1.0 `Environment`。
 - 创建一个 AMQP 1.0 `Connection`。
-- 创建一个线程安全的 `Publisher`，直接指向现有 quorum queue `delay.picture.queue`。
+- 创建一个线程安全的 `Publisher`，指向普通 Direct Exchange `delay.picture.direct`，路由键为 `delay.picture.query`。
 - 应用关闭时依次关闭 Publisher、Connection 和 Environment。
 
 不增加第二套 RabbitMQ 配置项。
@@ -51,11 +51,11 @@
    x-opt-delivery-time = 当前 Unix 毫秒时间 + 1,800,000
    ```
 
-4. 直接发布到现有 quorum queue `delay.picture.queue`，不再声明仅用于延迟消息的交换机、路由键和绑定。
+4. 发布到普通 Direct Exchange `delay.picture.direct`，以 `delay.picture.query` 路由到 quorum queue `delay.picture.queue`。
 5. 等待 Broker 发布结果，只有 `ACCEPTED` 才视为成功。
 6. 发布被拒绝、释放、异常或确认超时时，向上抛出异常。
 
-现有延迟队列保持 quorum queue。RabbitMQ 路由后立即确认已安全保存，但消费者只能在未来投递时间到达后收到消息。
+新增的 `delay.picture.direct` 只是延迟业务的路由交换机，不是 `x-delayed-message` 类型，也不承担等待职责。RabbitMQ 在发送时立即完成路由，现有 `delay.picture.queue` 保持 quorum queue 并保存延迟消息；消费者只能在未来投递时间到达后收到消息。
 
 ## Recoverer 调整
 
@@ -94,7 +94,7 @@ picture:
 
 - 不修改正常消息发布器和待发送任务扫描器。
 - 不改变数据库任务状态定义。
-- 不新增队列、交换机或路由键。
+- 不新增队列；只恢复一个普通 Direct Exchange、一个路由键及其与现有延迟队列的绑定。
 - 不修改30分钟后的第二轮清理逻辑。
 - 不改变最终死信邮件的30分钟 Redis 冷却。
 - 不修改前端。
@@ -102,6 +102,7 @@ picture:
 ## 验证
 
 - AMQP 1.0 发布消息包含绝对时间形式的 `x-opt-delivery-time` annotation。
+- AMQP 1.0 Publisher 的目标为 `delay.picture.direct` / `delay.picture.query`，并能路由到 `delay.picture.queue`。
 - Broker 返回 `ACCEPTED` 时延迟发布成功。
 - 非 `ACCEPTED`、异常和超时会导致正常队列原消息重新入队。
 - 延迟消息序列化结果可以被现有 Jackson 消息转换器映射为 `PictureDeleteMessage`。
