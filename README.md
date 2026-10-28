@@ -24,7 +24,8 @@
 ### 3. AI绘图
 支持根据用户要求重新绘制图像:
 
-<img width="637" height="766" alt="image" src="https://github.com/user-attachments/assets/8633dd64-f72e-4a09-89a2-95623bd8c8f5" />
+<img width="1091" height="569" alt="image" src="https://github.com/user-attachments/assets/e4541e9a-0a87-46d3-a805-f3cb6d3f1c8c" />
+
 
 ---
 
