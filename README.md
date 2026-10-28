@@ -21,6 +21,10 @@
 支持团队空间内多协作者实时抢锁编辑、缩放/旋转动作毫秒级同步广播、状态全量回放与原子保存更新：
 ![协同编辑](./sql/协同编辑.gif)
 
+### 3. AI绘图
+支持根据用户要求重新绘制图像
+<img width="637" height="766" alt="image" src="https://github.com/user-attachments/assets/8633dd64-f72e-4a09-89a2-95623bd8c8f5" />
+
 ---
 
 ## 🌟 核心特色与技术亮点
