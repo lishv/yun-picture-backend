@@ -134,4 +134,36 @@ public class EmailManager {
         String codeKey = CODE_KEY_PREFIX + biz + ":" + toEmail;
         stringRedisTemplate.delete(codeKey);
     }
+
+    /**
+     * 发送图片文件清理失败告警。
+     *
+     * @param toEmail 超级管理员邮箱
+     * @param taskId  首次触发告警的清理任务 id
+     */
+    public void sendPictureCleanupFailureAlert(String toEmail, Long taskId) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            helper.setFrom(fromEmail, "绘灵云图片协作平台");
+            helper.setTo(toEmail);
+            helper.setSubject("【绘灵云告警】图片文件清理任务执行失败");
+
+            String htmlContent = "<div style='font-family: Arial, sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #eee; border-radius: 8px;'>"
+                    + "<h2 style='color: #cf1322; margin-bottom: 16px;'>图片文件清理失败</h2>"
+                    + "<p style='font-size: 15px; color: #333;'>系统检测到图片文件清理任务最终失败。</p>"
+                    + "<p style='font-size: 15px; color: #333;'>首次触发任务 ID：<strong>" + taskId + "</strong></p>"
+                    + "<p style='font-size: 15px; color: #333;'>请登录超级管理员后台，在“图片管理 → 文件清理异常”中查看并人工处理。</p>"
+                    + "<hr style='border: none; border-top: 1px solid #eee; margin: 20px 0;'/>"
+                    + "<p style='font-size: 12px; color: #bbb; text-align: center;'>此邮件由系统自动发送，请勿直接回复</p>"
+                    + "</div>";
+
+            helper.setText(htmlContent, true);
+            mailSender.send(mimeMessage);
+            log.info("图片清理失败告警邮件已发送至: {}，taskId: {}", toEmail, taskId);
+        } catch (Exception exception) {
+            log.error("图片清理失败告警邮件发送异常，taskId: {}", taskId, exception);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "图片清理失败告警邮件发送失败");
+        }
+    }
 }

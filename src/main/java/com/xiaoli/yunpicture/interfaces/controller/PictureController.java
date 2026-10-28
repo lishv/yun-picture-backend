@@ -191,6 +191,7 @@ public class PictureController {
         //仅用户自己/管理员才能看到非公共图片
         Space space=null;
         if(spaceId!=null) {
+            //手动校验空间权限,如果不用注释的话就用这个
             boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
             ThrowUtils.throwIf(!hasPermission,ErrorCode.NO_AUTH_ERROR);
             // User loginUser = userService.getLoginUser(request);
@@ -204,7 +205,8 @@ public class PictureController {
         List<String> permissionList = spaceUserAuthManager.getPermissionList(space, loginUser);
         //获取封装类
         PictureVO pictureVO = pictureApplicationService.getPictureVO(picture, request);
-        pictureVO.setPermissionList(permissionList);
+        pictureVO.setPermissionList(permissionList);//手动获取权限列表
+        //是因为前端需要获取鉴权,当然你也可以使用注解然后再次获取权限列表,只不过不需要boolean hasPermission = StpKit.SPACE.hasPermission(SpaceUserPermissionConstant.PICTURE_VIEW);
         return ResultUtils.success(pictureVO);
     }
 

@@ -26,13 +26,15 @@
 
 该依赖与 Spring AMQP 使用的 `com.rabbitmq:amqp-client` 坐标不同，可以并存。
 
+官方 AMQP 1.0 客户端使用 Netty 4.2。项目需要将 `netty.version` 明确设置为 `4.2.19.Final`，并在 Spring Boot BOM 前优先导入对应的 Netty BOM，防止 Spring Boot 2.7 的依赖管理把客户端所需模块降级为 Netty 4.1。所有 Netty 模块必须保持同一版本，不能在同一 classpath 混用4.1和4.2。
+
 ## 连接与发布器
 
 新增 AMQP 1.0 配置，复用现有 `spring.rabbitmq.host`、`port`、`username`、`password` 和 `virtual-host`：
 
 - 应用启动时创建一个 AMQP 1.0 `Environment`。
 - 创建一个 AMQP 1.0 `Connection`。
-- 创建一个线程安全的 `Publisher`，目标为现有延迟交换机和延迟路由键。
+- 创建一个线程安全的 `Publisher`，直接指向现有 quorum queue `delay.picture.queue`。
 - 应用关闭时依次关闭 Publisher、Connection 和 Environment。
 
 不增加第二套 RabbitMQ 配置项。
@@ -49,7 +51,7 @@
    x-opt-delivery-time = 当前 Unix 毫秒时间 + 1,800,000
    ```
 
-4. 发布到现有 `delay.picture.direct`，路由键为 `delay.picture.query`。
+4. 直接发布到现有 quorum queue `delay.picture.queue`，不再声明仅用于延迟消息的交换机、路由键和绑定。
 5. 等待 Broker 发布结果，只有 `ACCEPTED` 才视为成功。
 6. 发布被拒绝、释放、异常或确认超时时，向上抛出异常。
 

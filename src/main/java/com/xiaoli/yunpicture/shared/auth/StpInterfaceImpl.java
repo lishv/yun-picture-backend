@@ -34,6 +34,7 @@ import static com.xiaoli.yunpicture.domain.user.constant.UserConstant.USER_LOGIN
 
 /**
  * 自定义权限加载接口实现类
+ * 。Sa-Token 在校验权限时，会回调这个接口来获取"当前用户有哪些权限"。
  */
 @Component    // 保证此类被 SpringBoot 扫描，完成 Sa-Token 的自定义权限验证扩展
 public class StpInterfaceImpl implements StpInterface {
@@ -121,6 +122,7 @@ public class StpInterfaceImpl implements StpInterface {
             spaceId = picture.getSpaceId();
             // 公共图库的图片，仅本人或管理员可操作
             if (spaceId == null) {
+                //仅本人或管理员可操作
                 if (picture.getUserId().equals(userId) || loginUser.isAdmin()) {
                     return ADMIN_PERMISSIONS;
                 } else {

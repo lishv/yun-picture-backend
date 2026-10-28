@@ -21,6 +21,7 @@ import java.util.List;
 
 /**
  * 空间成员权限管理
+ *
  */
 @Component
 public class SpaceUserAuthManager {
@@ -38,6 +39,7 @@ public class SpaceUserAuthManager {
      * 根据角色获取权限列表
      * @param spaceUserRole 角色名称
      * @return 权限列表
+     * 这里传入的空间角色是 SpaceRoleEnum ,然后在总权限里找到该角色对应的权限列表
      */
     public List<String> getPermissionsByRole(String spaceUserRole) {
         // 从空间用户权限配置中获取角色对应的权限列表

@@ -12,6 +12,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <spring-boot.version>2.7.6</spring-boot.version>
+        <netty.version>4.2.19.Final</netty.version>
     </properties>
     <dependencies>
         <dependency>
@@ -135,10 +136,23 @@
             <artifactId>spring-boot-starter-amqp</artifactId>
             <version>${spring-boot.version}</version>
         </dependency>
+        <!-- RabbitMQ 4.4 原生延迟消息使用 AMQP 1.0 message annotation -->
+        <dependency>
+            <groupId>com.rabbitmq.client</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>1.6.0</version>
+        </dependency>
 
     </dependencies>
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-bom</artifactId>
+                <version>${netty.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>

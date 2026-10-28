@@ -3,15 +3,19 @@ package com.xiaoli.yunpicture.infrastructure.messaging.picture;
 import com.xiaoli.yunpicture.domain.picture.entity.Picture;
 import com.xiaoli.yunpicture.domain.picture.entity.PictureCleanupTask;
 import com.xiaoli.yunpicture.domain.picture.service.PictureDomainService;
+import com.xiaoli.yunpicture.infrastructure.manager.email.EmailManager;
 import com.xiaoli.yunpicture.infrastructure.mapper.PictureCleanupTaskMapper;
 import com.xiaoli.yunpicture.infrastructure.mapper.PictureMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 图片文件删除消息消费者。
@@ -21,11 +25,20 @@ import java.util.Date;
 @Slf4j
 public class PictureDeleteListener {
 
+    private static final String CLEANUP_ALERT_COOLDOWN_KEY = "picture:cleanup:admin-email:cooldown";
+
     private final PictureCleanupTaskMapper pictureCleanupTaskMapper;
 
     private final PictureMapper pictureMapper;
 
     private final PictureDomainService pictureDomainService;
+
+    private final EmailManager emailManager;
+
+    private final StringRedisTemplate stringRedisTemplate;
+
+    @Value("${picture.cleanup.alert-email}")
+    private String cleanupAlertEmail;
 
     /**
      * 第一次消费正常队列。
@@ -45,6 +58,30 @@ public class PictureDeleteListener {
     @Transactional(rollbackFor = Exception.class)
     public void consumeDelayed(PictureDeleteMessage message) {
         consume(message, true);
+    }
+
+    /**
+     * 最终清理失败时通知超级管理员。
+     */
+    @RabbitListener(queues = MQPictureConstants.DLX_Picture_QUEUE_NAME)
+    public void consumeDeadLetter(PictureDeleteMessage message) {
+        Long taskId = message.getTaskId();
+        Boolean shouldNotify = stringRedisTemplate.opsForValue()
+                .setIfAbsent(CLEANUP_ALERT_COOLDOWN_KEY, "1", 30, TimeUnit.MINUTES);
+
+        if (!Boolean.TRUE.equals(shouldNotify)) {
+            log.info("30 分钟内已发送图片清理失败邮件，当前死信直接确认，taskId: {}", taskId);
+            return;
+        }
+
+        try {
+            emailManager.sendPictureCleanupFailureAlert(cleanupAlertEmail, taskId);
+        } catch (RuntimeException exception) {
+            stringRedisTemplate.delete(CLEANUP_ALERT_COOLDOWN_KEY);
+            throw exception;
+        }
+
+        log.warn("图片清理失败告警邮件已发送，taskId: {}", taskId);
     }
 
     /**

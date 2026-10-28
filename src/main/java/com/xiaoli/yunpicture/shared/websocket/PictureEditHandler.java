@@ -336,7 +336,7 @@ public class PictureEditHandler extends TextWebSocketHandler {
     }
 
     /**
-     * 向指定 WebSocket 会话发送响应
+     * 单薄向指定 WebSocket 会话发送响应
      *
      * @param session         WebSocket 会话
      * @param responseMessage 响应消息

@@ -22,7 +22,7 @@ public class PictureEditEventProducer {
     Disruptor<PictureEditEvent> pictureEditEventDisruptor;
 
     /**
-     * 发布事件到 Disruptor 缓冲区
+     * 发布事件到 Disruptor 缓冲区,业务处理全在 Disruptor 的工作线程里异步完成，I/O 线程不被阻塞
      * @param pictureEditRequestMessage 图片编辑请求消息
      * @param session WebSocket 会话
      * @param user 用户对象
@@ -41,6 +41,15 @@ public class PictureEditEventProducer {
         pictureEditEvent.setPictureId(pictureId);
         // 提交事件，通知消费者可以读取。
         ringBuffer.publish(next);
+        /*
+        这里是异步处理,不会阻塞 I/O 线程
+        标记事件就绪，消费者工作线程通过自旋检查发现后自动处理
+        因为 Disruptor 用的是 Busy Spin（忙等） 模式，而不是 LockSupport.park/unpark 这种主动唤醒。消费者线程一直在类似这样跑：
+        忙等虽然会消耗一点 CPU，但避免了线程上下文切换的开销，这就是为什么 Disruptor 比 ArrayBlockingQueue 快——用 CPU 换延迟。
+        工作线程会从 ringBuffer 中取事件,自动并调用事件处理方法onEvent处理
+
+        
+         */
     }
 
     /**
