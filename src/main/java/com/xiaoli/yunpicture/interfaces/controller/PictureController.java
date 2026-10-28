@@ -8,6 +8,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.xiaoli.yunpicture.application.service.SpaceApplicationService;
 import com.xiaoli.yunpicture.domain.space.valueobject.SpaceTypeEnum;
+import com.xiaoli.yunpicture.domain.picture.valueobject.AiDrawingPrompt;
 import com.xiaoli.yunpicture.infrastructure.annotation.AuthCheck;
 import com.xiaoli.yunpicture.infrastructure.api.aliyunai.AliYunAiApi;
 import com.xiaoli.yunpicture.infrastructure.api.aliyunai.model.CreateOutPaintingTaskResponse;
@@ -527,6 +528,10 @@ public class PictureController {
                 || createPictureOutPaintingTaskRequest.getPictureId() == null
                 || StrUtil.isBlank(createPictureOutPaintingTaskRequest.getPrompt())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        if (createPictureOutPaintingTaskRequest.getPrompt().trim().length()
+                > AiDrawingPrompt.MAX_USER_PROMPT_LENGTH) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "绘图提示词不能超过 4800 个字符");
         }
         User loginUser = userApplicationService.getLoginUser(request);
         CreateOutPaintingTaskResponse response = pictureApplicationService.createPictureOutPaintingTask(createPictureOutPaintingTaskRequest, loginUser);

@@ -13,6 +13,7 @@ import com.xiaoli.yunpicture.application.service.SpaceApplicationService;
 import com.xiaoli.yunpicture.domain.picture.entity.Picture;
 import com.xiaoli.yunpicture.domain.picture.repository.PictureRepository;
 import com.xiaoli.yunpicture.domain.picture.service.PictureDomainService;
+import com.xiaoli.yunpicture.domain.picture.valueobject.AiDrawingPrompt;
 import com.xiaoli.yunpicture.domain.picture.valueobject.PictureReviewStatusEnmu;
 import com.xiaoli.yunpicture.domain.user.entity.User;
 import com.xiaoli.yunpicture.infrastructure.api.CosManager;
@@ -771,7 +772,7 @@ public class PictureDomainServiceImpl  implements PictureDomainService {
         CreateOutPaintingTaskRequest.Content imageContent = new CreateOutPaintingTaskRequest.Content();
         imageContent.setImage(picture.getUrl());
         CreateOutPaintingTaskRequest.Content textContent = new CreateOutPaintingTaskRequest.Content();
-        textContent.setText(createPictureOutPaintingTaskRequest.getPrompt());
+        textContent.setText(AiDrawingPrompt.build(createPictureOutPaintingTaskRequest.getPrompt()));
         CreateOutPaintingTaskRequest.Message message = new CreateOutPaintingTaskRequest.Message();
         message.setRole("user");
         message.setContent(List.of(imageContent, textContent));
