@@ -22,6 +22,8 @@ public class PictureMqConfig  {
 
         DirectExchange normalExchange = new DirectExchange(MQPictureConstants.NORMAL_Picture_EXCHANGE_NAME);
 
+        DirectExchange delayExchange = new DirectExchange(MQPictureConstants.DELAY_Picture_EXCHANGE_NAME);
+
         DirectExchange dlxExchange = new DirectExchange(MQPictureConstants.DLX_Picture_EXCHANGE_NAME);
 
 
@@ -33,7 +35,7 @@ public class PictureMqConfig  {
         //2.RabbitMQ 4.4 quorum queue 原生延迟消息队列
         Queue delayQueue = QueueBuilder
                 .durable(MQPictureConstants.DELAY_Picture_QUEUE_NAME)
-                .quorum()//开启高可用
+                .quorum()//开启仲裁队列,高可用
                 // 再次消费失败时，进入最终死信队列
                 .deadLetterExchange(MQPictureConstants.DLX_Picture_EXCHANGE_NAME)
                 .deadLetterRoutingKey(MQPictureConstants.DLX_Picture_KEY)
@@ -46,14 +48,18 @@ public class PictureMqConfig  {
                 .build();
 
         return new Declarables(//可以添加多个交换机、队列、绑定关系
-                normalExchange, dlxExchange,//交换机
+                normalExchange, delayExchange, dlxExchange,//交换机
                 normalQueue, delayQueue, dlxQueue,//队列
                 //绑定关系
                 //1.正常队列绑定到正常交换机，路由键为 NORMAL_Picture_KEY
                 BindingBuilder.bind(normalQueue)
                         .to(normalExchange)
                         .with(MQPictureConstants.NORMAL_Picture_KEY),
-                //2.死信队列绑定到死信交换机，路由键为 DLX_Picture_KEY
+                //2.延迟队列绑定到普通延迟路由交换机
+                BindingBuilder.bind(delayQueue)
+                        .to(delayExchange)
+                        .with(MQPictureConstants.DELAY_Picture_KEY),
+                //3.死信队列绑定到死信交换机，路由键为 DLX_Picture_KEY
                 BindingBuilder.bind(dlxQueue)
                         .to(dlxExchange)
                         .with(MQPictureConstants.DLX_Picture_KEY)
@@ -66,7 +72,7 @@ public class PictureMqConfig  {
     }
 
     /**
-     *  首轮消费失败后，把消息可靠地重新发布到延迟队列，
+     *  首轮消费失败后，把消息可靠地重新发布到延迟交换机，
      *   并等待 Broker Confirm。
      * @param objectMapper
      * @param taskService

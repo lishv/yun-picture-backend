@@ -8,12 +8,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.amqp.ImmediateRequeueAmqpException;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.Declarables;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageProperties;
 import org.springframework.amqp.rabbit.retry.MessageRecoverer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -69,6 +72,20 @@ class PictureMqConfigTest {
         );
 
         verify(taskService, never()).markWaitingRetry(any(), any());
+    }
+
+    @Test
+    void shouldBindDelayQueueToDelayExchange() {
+        Declarables topology = new PictureMqConfig().pictureMqTopology();
+
+        assertTrue(topology.getDeclarables().stream()
+                .filter(Binding.class::isInstance)
+                .map(Binding.class::cast)
+                .anyMatch(binding ->
+                        MQPictureConstants.DELAY_Picture_EXCHANGE_NAME.equals(binding.getExchange())
+                                && MQPictureConstants.DELAY_Picture_QUEUE_NAME.equals(binding.getDestination())
+                                && MQPictureConstants.DELAY_Picture_KEY.equals(binding.getRoutingKey())
+                ));
     }
 
     private Message normalQueueMessage(Long taskId) throws Exception {

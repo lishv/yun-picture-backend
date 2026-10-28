@@ -38,7 +38,8 @@ public class RabbitMqAmqp10Config {
     @Bean(destroyMethod = "close")
     public Publisher pictureDelayAmqp10Publisher(Connection amqp10Connection) {
         return amqp10Connection.publisherBuilder()
-                .queue(MQPictureConstants.DELAY_Picture_QUEUE_NAME)
+                .exchange(MQPictureConstants.DELAY_Picture_EXCHANGE_NAME)
+                .key(MQPictureConstants.DELAY_Picture_KEY)
                 .publishTimeout(Duration.ofSeconds(5))
                 .build();
     }
