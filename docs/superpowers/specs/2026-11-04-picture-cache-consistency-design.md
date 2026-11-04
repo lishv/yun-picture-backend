@@ -26,7 +26,7 @@
 
 数据库操作失败时不清理缓存。
 
-缓存清理逻辑复用现有 `PictureController` 中的 `StringRedisTemplate` 和 Caffeine 缓存对象，通过一个私有方法集中处理，并由已有写接口在数据库操作成功后调用。缓存失效失败不增加额外补偿、回调或消息队列逻辑。
+缓存清理逻辑直接写入现有写接口，在数据库操作成功后复用 `PictureController` 中已有的 `StringRedisTemplate` 和 Caffeine 缓存对象完成清理，不额外增加方法。缓存失效失败不增加额外补偿、回调或消息队列逻辑。
 
 ## 涉及接口
 
