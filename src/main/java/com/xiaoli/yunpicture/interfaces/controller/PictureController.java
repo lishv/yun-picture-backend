@@ -126,6 +126,9 @@ public class PictureController {
         }
         User loginUser = userApplicationService.getLoginUser(request);
         pictureApplicationService.deletePicture(deleteRequest.getId(),loginUser);
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByPage:*"));
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByCursor:*"));
+        LOCAL_CACHE.invalidateAll();
 
         return ResultUtils.success(true);
     }
@@ -157,6 +160,9 @@ public class PictureController {
         //操作数据库
         boolean result = pictureApplicationService.updateById(picture);
         ThrowUtils.throwIf(!result,ErrorCode.OPERATION_ERROR);
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByPage:*"));
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByCursor:*"));
+        LOCAL_CACHE.invalidateAll();
         return ResultUtils.success(true);
     }
 
@@ -418,7 +424,11 @@ public class PictureController {
         }
         User loginUser = userApplicationService.getLoginUser(request);
         Picture picture = PictureAssembler.toPictureEntity(pictureEditRequest);
-        return pictureApplicationService.editPicture(picture,loginUser);
+        BaseResponse<Boolean> result = pictureApplicationService.editPicture(picture,loginUser);
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByPage:*"));
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByCursor:*"));
+        LOCAL_CACHE.invalidateAll();
+        return result;
     }
 
     /**
@@ -450,6 +460,9 @@ public class PictureController {
         ThrowUtils.throwIf(pictureReviewRequest == null,ErrorCode.PARAMS_ERROR);
         User loginUser = userApplicationService.getLoginUser(request);
         pictureApplicationService.doPictureReview(pictureReviewRequest, loginUser);
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByPage:*"));
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByCursor:*"));
+        LOCAL_CACHE.invalidateAll();
         return ResultUtils.success(true);
 
     }
@@ -510,6 +523,9 @@ public class PictureController {
         ThrowUtils.throwIf(pictureEditByBatchRequest == null, ErrorCode.PARAMS_ERROR);
         User loginUser = userApplicationService.getLoginUser(request);
         pictureApplicationService.editPictureByBatch(pictureEditByBatchRequest, loginUser);
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByPage:*"));
+        stringRedisTemplate.delete(stringRedisTemplate.keys("yunpicture:listPictureVOByCursor:*"));
+        LOCAL_CACHE.invalidateAll();
         return ResultUtils.success(true);
     }
 

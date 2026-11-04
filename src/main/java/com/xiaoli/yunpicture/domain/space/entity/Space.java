@@ -130,6 +130,8 @@ public class Space {
         if (spaceType != null && spaceTypeEnum == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "空间类型不存在");
         }
+
     }
+
 
 }
