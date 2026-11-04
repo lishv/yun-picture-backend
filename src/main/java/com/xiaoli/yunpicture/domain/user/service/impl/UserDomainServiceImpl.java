@@ -372,7 +372,7 @@ public class UserDomainServiceImpl implements UserDomainService {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入密码不一致");
         }
 
-        // 1. 校验验证码
+        // 1. 原子校验并消费验证码
         emailManager.verifyCode(email, "register", code);
 
         // 2. 校验账号是否已存在
@@ -396,8 +396,6 @@ public class UserDomainServiceImpl implements UserDomainService {
         boolean result = userRepository.saveOrUpdate(user);
         ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "注册失败");
 
-        // 5. 消费清除 Redis 验证码
-        emailManager.deleteCode(email, "register");
         return user.getId();
     }
 
@@ -422,7 +420,7 @@ public class UserDomainServiceImpl implements UserDomainService {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入密码不一致");
         }
 
-        // 1. 校验验证码
+        // 1. 原子校验并消费验证码
         emailManager.verifyCode(email, "reset_password", code);
 
         // 2. 查出对应用户
@@ -436,8 +434,6 @@ public class UserDomainServiceImpl implements UserDomainService {
         boolean result = this.updateById(user);
         ThrowUtils.throwIf(!result, ErrorCode.SYSTEM_ERROR, "更新密码失败");
 
-        // 4. 清除 Redis 验证码
-        emailManager.deleteCode(email, "reset_password");
         return true;
     }
 

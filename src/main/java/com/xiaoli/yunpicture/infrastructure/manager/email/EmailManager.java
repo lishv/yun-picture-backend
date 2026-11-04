@@ -8,12 +8,14 @@ import com.xiaoli.yunpicture.infrastructure.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import javax.mail.internet.MimeMessage;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -36,6 +38,15 @@ public class EmailManager {
     private static final String CODE_KEY_PREFIX = "user:code:";
     // 防刷限流 Redis 前缀（60秒冷却）
     private static final String COOLDOWN_KEY_PREFIX = "user:code:cooldown:";
+    // 原子完成验证码读取、校验和删除
+    private static final DefaultRedisScript<Long> VERIFY_CODE_SCRIPT = new DefaultRedisScript<>(
+            "local code = redis.call('GET', KEYS[1]) " +
+                    "if not code then return -1 end " +
+                    "if code ~= ARGV[1] then return 0 end " +
+                    "redis.call('DEL', KEYS[1]) " +
+                    "return 1",
+            Long.class
+    );
 
     /**
      * 发送邮箱验证码并存入 Redis
@@ -107,7 +118,7 @@ public class EmailManager {
     }
 
     /**
-     * 校验验证码是否正确
+     * 原子校验并消费验证码
      *
      * @param toEmail 邮箱
      * @param biz     业务场景
@@ -118,21 +129,17 @@ public class EmailManager {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         String codeKey = CODE_KEY_PREFIX + biz + ":" + toEmail;
-        String cachedCode = stringRedisTemplate.opsForValue().get(codeKey);
-        if (StrUtil.isBlank(cachedCode)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        Long result = stringRedisTemplate.execute(
+                VERIFY_CODE_SCRIPT,
+                Collections.singletonList(codeKey),
+                code.trim()
+        );
+        if (Long.valueOf(-1L).equals(result)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码已过期");
         }
-        if (!cachedCode.equals(code.trim())) {
+        if (Long.valueOf(0L).equals(result)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "验证码错误");
         }
-    }
-
-    /**
-     * 消费/清除已验证的验证码（防止二次利用）
-     */
-    public void deleteCode(String toEmail, String biz) {
-        String codeKey = CODE_KEY_PREFIX + biz + ":" + toEmail;
-        stringRedisTemplate.delete(codeKey);
     }
 
     /**
